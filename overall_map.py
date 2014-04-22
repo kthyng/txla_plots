@@ -117,6 +117,7 @@ if doshelf:
     basemap_gulf.fillcontinents('0.8',ax=ax_shelf)
     basemap_gulf.drawstates()
     basemap_gulf.drawcountries()
+    ax_shelf.set_axis_bgcolor('0.9')
 
 if dogulf:
     # Gulf grid
