@@ -16,9 +16,9 @@ from matplotlib.mlab import find
 url = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
 
 # Times to include in average
-year = 2010; 
-startmonth = 7; endmonth = 9; season = 'summer'
-# startmonth = 1; endmonth = 3; season = 'winter'
+year = 2006; 
+# startmonth = 7; endmonth = 9; season = 'summer'
+startmonth = 1; endmonth = 3; season = 'winter'
 startdate = datetime(year, startmonth, 1, 0, 0)
 enddate = datetime(year, endmonth, 1, 0, 0)
 
@@ -128,7 +128,7 @@ v = shrink(v, (u.shape[0],mask[1:-1, 1:-1].shape[0],mask[1:-1, 1:-1].shape[1]))
 
 u, v = rot2d(u, v, anglev[1:-1, 1:-1])
 
-angle = np.arctan2(v, u)
+angle = np.arctan(v/u)
 # angle.set_fill_value(np.nan)
 
 np.savez('calcs/wind_stress/calcs' + str(year) + season + '.npz', 
