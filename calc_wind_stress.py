@@ -16,7 +16,7 @@ from matplotlib.mlab import find
 url = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
 
 # Times to include in average
-year = 2006; 
+year = 2005; 
 # startmonth = 7; endmonth = 9; season = 'summer'
 startmonth = 1; endmonth = 3; season = 'winter'
 startdate = datetime(year, startmonth, 1, 0, 0)
@@ -126,10 +126,26 @@ v = nc.variables['svstr'][istart:iend, :, :]
 u = shrink(u, (u.shape[0],mask[1:-1, 1:-1].shape[0],mask[1:-1, 1:-1].shape[1]))
 v = shrink(v, (u.shape[0],mask[1:-1, 1:-1].shape[0],mask[1:-1, 1:-1].shape[1]))
 
+# only use wind in a certain area in statistics
+lon_rho = shrink(lon_rho, mask[1:-1, 1:-1].shape)
+lat_rho = shrink(lat_rho, mask[1:-1, 1:-1].shape)
+ind1 = (lon_rho<-90) * (lat_rho>27.5)
+
 u, v = rot2d(u, v, anglev[1:-1, 1:-1])
 
-angle = np.arctan(v/u)
+# angle = np.arctan(v/u)
+angle = np.arctan2(v,u)
 # angle.set_fill_value(np.nan)
 
+# angle will be between -pi and pi, but I want the changeover to be at zero instead
+ind2 = (angle<0)
+angle[ind2] = angle[ind2] + 2*np.pi
+
+# change from radians to degrees
+angle = angle*180./np.pi
+
+amean = np.ma.mean(angle[:,ind1])
+
 np.savez('calcs/wind_stress/calcs' + str(year) + season + '.npz', 
-            angle_mean=np.ma.mean(angle), angle_std=np.ma.std(angle))
+            angle_mean=amean, angle_std=np.ma.std(angle[:,ind1]),
+            s_mean=np.ma.mean(u[:,ind1]**2+v[:,ind1]**2))
