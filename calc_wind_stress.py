@@ -16,11 +16,11 @@ from matplotlib.mlab import find
 url = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
 
 # Times to include in average
-year = 2005; 
+year = 2010; 
 # startmonth = 7; endmonth = 9; season = 'summer'
 startmonth = 1; endmonth = 3; season = 'winter'
-startdate = datetime(year, startmonth, 1, 0, 0)
-enddate = datetime(year, endmonth, 1, 0, 0)
+startdate = datetime(year, startmonth, 15, 0, 0)
+enddate = datetime(year, endmonth, 15, 0, 0)
 
 
 #####################################################################################
@@ -116,36 +116,33 @@ anglev = nc.variables['angle'][:]
 
 x_rho, y_rho = basemap(lon_rho, lat_rho)
 
+# Get wind stress from model for the desired time frame
 u = nc.variables['sustr'][istart:iend, :, :]
 v = nc.variables['svstr'][istart:iend, :, :]
 
-# # average
-# u = u.mean(axis=0)
-# v = v.mean(axis=0)
+# Put on the same grid
+u = shrink(u, (u.shape[0], mask[1:-1, 1:-1].shape[0], mask[1:-1, 1:-1].shape[1]))
+v = shrink(v, (v.shape[0], mask[1:-1, 1:-1].shape[0], mask[1:-1, 1:-1].shape[1]))
 
-u = shrink(u, (u.shape[0],mask[1:-1, 1:-1].shape[0],mask[1:-1, 1:-1].shape[1]))
-v = shrink(v, (u.shape[0],mask[1:-1, 1:-1].shape[0],mask[1:-1, 1:-1].shape[1]))
-
-# only use wind in a certain area in statistics
+# only use wind in a certain area in statistics (winter wind transport region)
 lon_rho = shrink(lon_rho, mask[1:-1, 1:-1].shape)
 lat_rho = shrink(lat_rho, mask[1:-1, 1:-1].shape)
 ind1 = (lon_rho<-90) * (lat_rho>27.5)
 
+# rotate to be on Cartesian grid
 u, v = rot2d(u, v, anglev[1:-1, 1:-1])
 
-# angle = np.arctan(v/u)
-angle = np.arctan2(v,u)
-# angle.set_fill_value(np.nan)
+# Take mean of the stresses in the desired area
+u = u[:,ind1].mean()
+v = v[:,ind1].mean()
 
-# angle will be between -pi and pi, but I want the changeover to be at zero instead
-ind2 = (angle<0)
-angle[ind2] = angle[ind2] + 2*np.pi
+# calculate the angle
+angle = np.rad2deg(np.arctan2(v, u))
 
-# change from radians to degrees
-angle = angle*180./np.pi
-
-amean = np.ma.mean(angle[:,ind1])
+# Want the break to be at zero degrees
+if angle<0:
+    angle = angle+360.
 
 np.savez('calcs/wind_stress/calcs' + str(year) + season + '.npz', 
-            angle_mean=amean, angle_std=np.ma.std(angle[:,ind1]),
-            s_mean=np.ma.mean(u[:,ind1]**2+v[:,ind1]**2))
+            angle=angle)
+
