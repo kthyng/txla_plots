@@ -11,21 +11,41 @@ from mpl_toolkits.basemap import Basemap
 import netCDF4 as netCDF
 from datetime import datetime
 from matplotlib.mlab import find
+import pdb
+import glob
 
-
-url = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
 
 # Times to include in average
-year = 2010; 
+year = 2013; 
 # startmonth = 7; endmonth = 9; season = 'summer'
 startmonth = 1; endmonth = 3; season = 'winter'
 startdate = datetime(year, startmonth, 15, 0, 0)
 enddate = datetime(year, endmonth, 15, 0, 0)
 
+grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+# vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
+
+grid = netCDF.Dataset(grid_filename)
+
+
+# url = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
+# url = '/home/kthyng/shelf/' + str(year) + '/ocean_his_*.nc'
+if year<=2012:
+    years = np.arange(2004, 2013)
+    url = []
+    for Year in years:
+        url.extend(np.sort(glob.glob('/home/kthyng/shelf/' + str(Year) + '/ocean_his_????.nc')))
+elif (year==2013) or (year==2014):
+    years = np.arange(2013,2015)
+    url = []
+    for Year in years:
+        url.extend(np.sort(glob.glob('/home/kthyng/shelf/' + str(Year) + '/ocean_his_*.nc')))
+
 
 #####################################################################################
 
-nc = netCDF.Dataset(url)
+nc = netCDF.MFDataset(url)
+# nc = netCDF.Dataset(url)
 
 t = nc.variables['ocean_time'][:]
 units = nc.variables['ocean_time'].units
@@ -109,10 +129,10 @@ def rot2d(x, y, ang):
     return xr, yr
 
 
-mask = nc.variables['mask_rho'][:]
-lon_rho = nc.variables['lon_rho'][:]
-lat_rho = nc.variables['lat_rho'][:]
-anglev = nc.variables['angle'][:]
+mask = grid.variables['mask_rho'][:]
+lon_rho = grid.variables['lon_rho'][:]
+lat_rho = grid.variables['lat_rho'][:]
+anglev = grid.variables['angle'][:]
 
 x_rho, y_rho = basemap(lon_rho, lat_rho)
 
