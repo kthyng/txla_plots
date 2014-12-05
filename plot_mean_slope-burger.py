@@ -34,24 +34,20 @@ mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 g = 9.81
 rho0 = 1023. # kg/m^3
 
-whichtime = 'seasonal' # 'seasonal' or 'interannual'
+whichtime = 'interannual' # 'seasonal' or 'interannual'
 whichseason = 'summer' # 'winter' or 'summer'
 
-loc = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
-grid = tracpy.inout.readgrid(loc, usebasemap=True)
-
-d = netCDF.Dataset(loc)
-t = d.variables['ocean_time'][:]
-units = d.variables['ocean_time'].units
-dates = netCDF.num2date(t, units)
-years = np.asarray([dates[i].year for i in xrange(len(dates))])
-months = np.asarray([dates[i].month for i in xrange(len(dates))])
-days = np.asarray([dates[i].day for i in xrange(len(dates))])
+# loc = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
+# grid = tracpy.inout.readgrid(loc, usebasemap=True)
+grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
+grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
 
 fname1 = 'calcs/slope-burger/f-alpha.npz'
 fname2 = 'calcs/slope-burger/' + whichtime + 'N.npz'
 
 # Things that don't change in time
+d = netCDF.Dataset(grid_filename)
 f = d.variables['f'][:] # Coriolis
 pm = d.variables['pm'][:]; pn = d.variables['pn'][:]
 h = d.variables['h'][:]
@@ -59,8 +55,9 @@ h_smoothed = ndimage.filters.gaussian_filter(h, 20)
 dhdy, dhdx = np.gradient(h_smoothed, 1/pn, 1/pm)
 alpha = np.sqrt((dhdx)**2 + (dhdy)**2) # dimensional bottom slope, across-shelf
 np.savez(fname1, f=f, alpha=alpha, xr=grid['xr'].T, yr=grid['yr'].T)
+d.close()
 
-Years = np.arange(2004,2011)
+Years = np.arange(2004,2015)
 
 if whichtime == 'interannual':
 
@@ -69,13 +66,29 @@ if whichtime == 'interannual':
         N = np.zeros((Years.size,f.shape[0],f.shape[1])) # season x grid
 
         for i,Year in enumerate(Years): # loop through years
+            if Year<=2012:
+                fname = glob.glob('/home/kthyng/shelf/' + str(Year) + '/ocean_his_????.nc')
+                d = netCDF.MFDataset(fname)
+            elif (Year==2013) or (Year==2014):
+                fname = glob.glob('/home/kthyng/shelf/' + str(Year) + '/ocean_his_*.nc')
+                d = netCDF.MFDataset(fname)
+
+            t = d.variables['ocean_time'][:]
+            units = d.variables['ocean_time'].units
+            dates = netCDF.num2date(t, units)
+            years = np.asarray([dates[j].year for j in xrange(len(dates))])
+            months = np.asarray([dates[j].month for j in xrange(len(dates))])
+            days = np.asarray([dates[j].day for j in xrange(len(dates))])
+            hours = np.asarray([dates[j].hour for j in xrange(len(dates))])
+            # pdb.set_trace()
 
             # Summer
             count = np.zeros(f.shape) # count of not-masked N values
             tinds =  find((Year==years) * ((months==7) + (months==8))) # loop through season
             for tind in tinds:
-                fname = 'calcs/slope-burger/' + 'N-' + str(years[tind]) \
-                        + str(months[tind]).zfill(2) + str(days[tind]).zfill(2) + '.npz'
+                fname = 'calcs/slope-burger/' + 'N-' + str(years[tind]) + '-' \
+                        + str(months[tind]).zfill(2) + '-' + str(days[tind]).zfill(2) \
+                        + 'T' + str(hours[tind]).zfill(2) + '.npz'
                 if not os.path.exists(fname):
                     salt = d.variables['salt'][tind,:,:,:]
                     temp = d.variables['temp'][tind,:,:,:]
@@ -157,7 +170,7 @@ elif whichtime == 'seasonal':
         # Winter
         i = 0
         count = np.zeros(f.shape) # count of not-masked N values
-        tinds =  find(((years>=2004) * (years<=2010)) * ((months==1) + (months==2))) # loop through season
+        tinds =  find(((years>=2004) * (years<=2014)) * ((months==1) + (months==2))) # loop through season
         for tind in tinds:
             fname = 'calcs/slope-burger/' + 'N-' + str(years[tind]) \
                     + str(months[tind]).zfill(2) + str(days[tind]).zfill(2) + '.npz'
@@ -185,7 +198,7 @@ elif whichtime == 'seasonal':
         # Summer
         i = 1
         count = np.zeros(f.shape) # count of not-masked N values
-        tinds =  find(((years>=2004) * (years<=2010)) * ((months==7) + (months==8))) # loop through season
+        tinds =  find(((years>=2004) * (years<=2014)) * ((months==7) + (months==8))) # loop through season
         for tind in tinds:
             fname = 'calcs/slope-burger/' + 'N-' + str(years[tind]) \
                     + str(months[tind]).zfill(2) + str(days[tind]).zfill(2) + '.npz'
