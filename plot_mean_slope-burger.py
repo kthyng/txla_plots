@@ -122,40 +122,46 @@ if whichtime == 'interannual':
 
     Smean = S.mean(axis=0)
 
-    lev_exp = np.linspace(np.log10(.05), 0.6,11)
-    # lev_exp = np.linspace(np.log10(.01), np.ceil(np.log10(np.nanmax(S))),50)
-    # lev_exp = np.linspace(np.ceil(np.log10(np.nanmin(S))), np.ceil(np.log10(np.nanmax(S))),50)
+    lev_exp = np.linspace(np.log10(.01), np.log10(4.0), 11)
+    # lev_exp = np.linspace(np.log10(.001), np.log10(0.5),11)
+    # # lev_exp = np.linspace(np.log10(.05), 0.6,11)
+    # # lev_exp = np.linspace(np.log10(.01), np.ceil(np.log10(np.nanmax(S))),50)
+    # # lev_exp = np.linspace(np.ceil(np.log10(np.nanmin(S))), np.ceil(np.log10(np.nanmax(S))),11)
     levels = np.power(10, lev_exp)
 
-    fig, axarr = plt.subplots(2,4)
-    fig.set_size_inches(13.4, 6.6125)
-    fig.subplots_adjust(left=0.03, bottom=0.15, right=1.0, top=0.96, wspace=0.03, hspace=0.11)
+    fig, axarr = plt.subplots(4,3)
+    fig.set_size_inches(8.7, 11.5)
+    fig.subplots_adjust(left=0.008, bottom=0.1, right=1.0, top=0.98, wspace=0.005, hspace=0.1)
 
     for i, ax in enumerate(axarr.flatten()):
        # Titles for subplots
-        if i==4:
-            tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
+        if i==10:
+            tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
+                pars=np.arange(20, 36, 2), outline=False, parslabels=[0, 1, 0, 0])
             ax.set_title(str(2004+i))
-        elif i==7:
+        elif i==11:
             ax.set_frame_on(False)
             ax.set_axis_off()
         else:
-            tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2), 
+            tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
+                pars=np.arange(20, 36, 2), outline=False,
                 merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
             ax.set_title(str(2004+i))
 
-        if i<7:
+        if i!=11:
             xr=grid['xr'].T; yr=grid['yr'].T
             mappable = ax.contourf(xr, yr, S[i,:,:], cmap='Blues', levels=levels, norm=colors.LogNorm())#, extend='max')
             # mappable = ax.contourf(xr, yr, S[i,:,:]-Smean, cmap='Blues', levels=levels, extend='max')
 
+        ax.set_frame_on(False)
 
     # Horizontal colorbar below plot
-    cax = fig.add_axes([0.25, 0.075, 0.5, 0.02]) #colorbar axes
+    cax = fig.add_axes([0.25, 0.05, 0.5, 0.02]) #colorbar axes
     cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
     cb.set_label('Mean slope Burger number')
-    cb.set_ticks(levels[::2])
-    cb.set_ticklabels(["%1.2f" % level for level in levels[::2]])
+    cb.set_ticks([.01,.1,1])
+    # cb.set_ticks(levels[::2])
+    # cb.set_ticklabels(["%1.2f" % level for level in levels[::2]])
 
     fig.savefig('figures/slope-burger/' + whichtime + '-' + whichseason + '_mean-log.png', bbox_inches='tight')
 
@@ -165,64 +171,81 @@ elif whichtime == 'seasonal':
     if not os.path.exists(fname2):
 
         N = np.zeros((2,f.shape[0],f.shape[1])) # season x grid
+        count = np.zeros((2,f.shape[0],f.shape[1])) # count of not-masked N values
   
-        # pdb.set_trace()
-        # Winter
-        i = 0
-        count = np.zeros(f.shape) # count of not-masked N values
-        tinds =  find(((years>=2004) * (years<=2014)) * ((months==1) + (months==2))) # loop through season
-        for tind in tinds:
-            fname = 'calcs/slope-burger/' + 'N-' + str(years[tind]) \
-                    + str(months[tind]).zfill(2) + str(days[tind]).zfill(2) + '.npz'
-            if not os.path.exists(fname):
-                salt = d.variables['salt'][tind,:,:,:]
-                temp = d.variables['temp'][tind,:,:,:]
-                rho = gsw.rho(salt, temp, 0)
-                zeta = d.variables['zeta'][tind,:,:]
-                zwt = octant.depths.get_zw(d.variables['Vtransform'][:][0], d.variables['Vstretching'][:][0], 
-                            salt.shape[0], d.variables['theta_s'][:][0], d.variables['theta_b'][:][0], 
-                                h, d.variables['hc'][:][0], zeta=zeta, Hscale=3)
-                Ntemp = np.ma.median(np.sqrt(-g/rho0 * ((rho[2:,:,:]-rho[:-2,:,:])/(zwt[2:,:,:]-zwt[:-2,:,:]))), axis=0) # just save median
-                Ntemp = Ntemp.filled()
-                np.savez(fname, N=Ntemp) # can't save masked arrays
-            else:
-                Ntemp = np.load(fname)['N']
-            ind = Ntemp[:,:]>500
-            Ntemp[ind] = np.nan
-            combined = np.dstack((N[i,:,:],Ntemp))
-            N[i,:,:] = np.nansum(combined, axis=2)
-            count = count + ~np.isnan(Ntemp)
 
-        N[i,:,:] = N[i,:,:]/count # finish mean
+        for i,Year in enumerate(Years): # loop through years
+            if Year<=2012:
+                fname = glob.glob('/home/kthyng/shelf/' + str(Year) + '/ocean_his_????.nc')
+                d = netCDF.MFDataset(fname)
+            elif (Year==2013) or (Year==2014):
+                fname = glob.glob('/home/kthyng/shelf/' + str(Year) + '/ocean_his_*.nc')
+                d = netCDF.MFDataset(fname)
 
-        # Summer
-        i = 1
-        count = np.zeros(f.shape) # count of not-masked N values
-        tinds =  find(((years>=2004) * (years<=2014)) * ((months==7) + (months==8))) # loop through season
-        for tind in tinds:
-            fname = 'calcs/slope-burger/' + 'N-' + str(years[tind]) \
-                    + str(months[tind]).zfill(2) + str(days[tind]).zfill(2) + '.npz'
-            if not os.path.exists(fname):
-                salt = d.variables['salt'][tind,:,:,:]
-                temp = d.variables['temp'][tind,:,:,:]
-                rho = gsw.rho(salt, temp, 0)
-                zeta = d.variables['zeta'][tind,:,:]
-                zwt = octant.depths.get_zw(d.variables['Vtransform'][:][0], d.variables['Vstretching'][:][0], 
-                            salt.shape[0], d.variables['theta_s'][:][0], d.variables['theta_b'][:][0], 
-                                h, d.variables['hc'][:][0], zeta=zeta, Hscale=3)
-                Ntemp = np.ma.median(np.sqrt(-g/rho0 * ((rho[2:,:,:]-rho[:-2,:,:])/(zwt[2:,:,:]-zwt[:-2,:,:]))), axis=0) # just save median
-                Ntemp = Ntemp.filled()
-                np.savez(fname, N=Ntemp) # can't save masked arrays
-            else:
-                Ntemp = np.load(fname)['N']
-            ind = Ntemp[:,:]>500
-            Ntemp[ind] = np.nan
-            combined = np.dstack((N[i,:,:],Ntemp))
-            N[i,:,:] = np.nansum(combined, axis=2)
-            count = count + ~np.isnan(Ntemp)
+            t = d.variables['ocean_time'][:]
+            units = d.variables['ocean_time'].units
+            dates = netCDF.num2date(t, units)
+            years = np.asarray([dates[j].year for j in xrange(len(dates))])
+            months = np.asarray([dates[j].month for j in xrange(len(dates))])
+            days = np.asarray([dates[j].day for j in xrange(len(dates))])
+            hours = np.asarray([dates[j].hour for j in xrange(len(dates))])
 
-        N[i,:,:] = N[i,:,:]/count # finish mean
+            # pdb.set_trace()
+            # Winter
+            i = 0
+            tinds =  find((Year==years) * ((months==1) + (months==2))) # loop through season
+            for tind in tinds:
+                fname = 'calcs/slope-burger/' + 'N-' + str(years[tind]) + '-' \
+                        + str(months[tind]).zfill(2) + '-' + str(days[tind]).zfill(2) \
+                        + 'T' + str(hours[tind]).zfill(2) + '.npz'
+                if not os.path.exists(fname):
+                    salt = d.variables['salt'][tind,:,:,:]
+                    temp = d.variables['temp'][tind,:,:,:]
+                    rho = gsw.rho(salt, temp, 0)
+                    zeta = d.variables['zeta'][tind,:,:]
+                    zwt = octant.depths.get_zw(d.variables['Vtransform'][:][0], d.variables['Vstretching'][:][0], 
+                                salt.shape[0], d.variables['theta_s'][:][0], d.variables['theta_b'][:][0], 
+                                    h, d.variables['hc'][:][0], zeta=zeta, Hscale=3)
+                    Ntemp = np.ma.median(np.sqrt(-g/rho0 * ((rho[2:,:,:]-rho[:-2,:,:])/(zwt[2:,:,:]-zwt[:-2,:,:]))), axis=0) # just save median
+                    Ntemp = Ntemp.filled()
+                    np.savez(fname, N=Ntemp) # can't save masked arrays
+                else:
+                    Ntemp = np.load(fname)['N']
+                ind = Ntemp[:,:]>500
+                Ntemp[ind] = np.nan
+                combined = np.dstack((N[i,:,:],Ntemp))
+                N[i,:,:] = np.nansum(combined, axis=2)
+                count[i,:,:] = count[i,:,:] + ~np.isnan(Ntemp)
 
+            # N[i,:,:] = N[i,:,:]/count[i,:,:] # finish mean
+
+            # Summer
+            i = 1
+            tinds =  find((Year==years) * ((months==7) + (months==8))) # loop through season
+            for tind in tinds:
+                fname = 'calcs/slope-burger/' + 'N-' + str(years[tind]) + '-' \
+                        + str(months[tind]).zfill(2) + '-' + str(days[tind]).zfill(2) \
+                        + 'T' + str(hours[tind]).zfill(2) + '.npz'
+                if not os.path.exists(fname):
+                    salt = d.variables['salt'][tind,:,:,:]
+                    temp = d.variables['temp'][tind,:,:,:]
+                    rho = gsw.rho(salt, temp, 0)
+                    zeta = d.variables['zeta'][tind,:,:]
+                    zwt = octant.depths.get_zw(d.variables['Vtransform'][:][0], d.variables['Vstretching'][:][0], 
+                                salt.shape[0], d.variables['theta_s'][:][0], d.variables['theta_b'][:][0], 
+                                    h, d.variables['hc'][:][0], zeta=zeta, Hscale=3)
+                    Ntemp = np.ma.median(np.sqrt(-g/rho0 * ((rho[2:,:,:]-rho[:-2,:,:])/(zwt[2:,:,:]-zwt[:-2,:,:]))), axis=0) # just save median
+                    Ntemp = Ntemp.filled()
+                    np.savez(fname, N=Ntemp) # can't save masked arrays
+                else:
+                    Ntemp = np.load(fname)['N']
+                ind = Ntemp[:,:]>500
+                Ntemp[ind] = np.nan
+                combined = np.dstack((N[i,:,:],Ntemp))
+                N[i,:,:] = np.nansum(combined, axis=2)
+                count[i,:,:] = count[i,:,:] + ~np.isnan(Ntemp)
+
+        N = N/count # finish mean
         S = N*alpha/f
         # pdb.set_trace()
 
@@ -233,10 +256,13 @@ elif whichtime == 'seasonal':
 
     # Plot Winter and Summer
 
-    lev_exp = np.linspace(np.log10(.05), 0.6,11)
-    # lev_exp = np.linspace(np.log10(.01), np.ceil(np.log10(np.nanmax(S))),50)
-    # lev_exp = np.linspace(np.ceil(np.log10(np.nanmin(S))), np.ceil(np.log10(np.nanmax(S))),50)
+    lev_exp = np.linspace(np.log10(.01), np.log10(4.0), 11)
+    # lev_exp = np.linspace(np.log10(.001), np.log10(0.5),11)
+    # # lev_exp = np.linspace(np.log10(.05), 0.6,11)
+    # # lev_exp = np.linspace(np.log10(.01), np.ceil(np.log10(np.nanmax(S))),50)
+    # # lev_exp = np.linspace(np.ceil(np.log10(np.nanmin(S))), np.ceil(np.log10(np.nanmax(S))),11)
     levels = np.power(10, lev_exp)
+    # levels = np.array([0.001, 0.01, 0.1])
 
     fig, axarr = plt.subplots(1,2)
     fig.set_size_inches(13.675, 6.6125)
@@ -274,8 +300,9 @@ elif whichtime == 'seasonal':
     cax = fig.add_axes([0.25, 0.075, 0.5, 0.02]) #colorbar axes
     cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
     cb.set_label('Mean slope Burger number')
-    cb.set_ticks(levels[::2])
-    cb.set_ticklabels(["%1.2f" % level for level in levels[::2]])
+    # cb.set_ticks(levels[::2])
+    cb.set_ticks([.001, .01, .1, 1.0])
+    # cb.set_ticklabels(["%1.4f" % level for level in levels[::2]])
 
     fig.savefig('figures/slope-burger/' + whichtime + '_mean-log.png', bbox_inches='tight')
 
