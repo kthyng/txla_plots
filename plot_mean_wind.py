@@ -21,11 +21,13 @@ grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
 grid = netCDF.Dataset(grid_filename)
 
 # Times to include in average
-year = 2014; 
+year = 2004; 
 # startmonth = 7; endmonth = 9; season = 'summer'
 startmonth = 1; endmonth = 3; season = 'winter'
-startdate = datetime(year, startmonth, 15, 0, 0)
-enddate = datetime(year, endmonth, 15, 0, 0)
+startdate = datetime(year, startmonth, 1, 0, 0)
+enddate = datetime(year, endmonth, 1, 0, 0)
+# startdate = datetime(year, startmonth, 15, 0, 0)
+# enddate = datetime(year, endmonth, 15, 0, 0)
 
 doplot = 0 # for 0, just save calculation
 
