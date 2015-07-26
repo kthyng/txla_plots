@@ -30,9 +30,9 @@ mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
 whichtime = 'interannual' # 'seasonal' or 'interannual'
-whicharea = 'summer' # 'winter' or 'summer'
+whichseason = 'winter' # 'winter' or 'summer'
 
-loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+loc = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
 grid = tracpy.inout.readgrid(loc, usebasemap=True)
 
 d = netCDF.Dataset(loc)
@@ -42,70 +42,127 @@ dates = netCDF.num2date(t, units)
 years = np.asarray([dates[i].year for i in xrange(len(dates))])
 months = np.asarray([dates[i].month for i in xrange(len(dates))])
 
-# desired time indices for average, 2004-2011 and Jan or Feb
-tinds = (years>=2004) * (years<=2011) * ((months==1) + (months==2))
-zetaw = d.variables['zeta'][tinds,:,:]
-# zetaw.set_fill_value(np.nan)
-# zetaw = zetaw.filled()
-# zmaxw = np.nanmax(abs(zetaw))
-tinds = (years>=2004) * (years<=2011) * ((months==7) + (months==8))
-zetas = d.variables['zeta'][tinds,:,:]
-# zetas.set_fill_value(np.nan)
-# zetas = zetas.filled()
-# zmaxs = np.nanmax(abs(zetas))
+if whichtime == 'seasonal':
+    # desired time indices for average, 2004-2011 and Jan or Feb
+    tinds = (years>=2004) * (years<=2011) * ((months==1) + (months==2))
+    zetaw = d.variables['zeta'][tinds,:,:]
+    # zetaw.set_fill_value(np.nan)
+    # zetaw = zetaw.filled()
+    # zmaxw = np.nanmax(abs(zetaw))
+    tinds = (years>=2004) * (years<=2011) * ((months==7) + (months==8))
+    zetas = d.variables['zeta'][tinds,:,:]
+    # zetas.set_fill_value(np.nan)
+    # zetas = zetas.filled()
+    # zmaxs = np.nanmax(abs(zetas))
 
-# levels = np.arange(-0.9, 1.1, 0.2)
-# levels = np.arange(-1.8, 2.2, 0.4)
-# # mean
-# levels = np.arange(-.18, .22, 0.04)
-# abs mean
-# levels = np.arange(0, .22, 0.02)
-# # min mean
-# levels = np.arange(-.22, 0, 0.02)
-# mean
-levels = np.arange(0, .22, 0.02)
+    # levels = np.arange(-0.9, 1.1, 0.2)
+    # levels = np.arange(-1.8, 2.2, 0.4)
+    # # mean
+    # levels = np.arange(-.18, .22, 0.04)
+    # abs mean
+    # levels = np.arange(0, .22, 0.02)
+    # # min mean
+    # levels = np.arange(-.22, 0, 0.02)
+    # mean
+    levels = np.arange(0, .22, 0.02)
 
-sshfname = 'calcs/ssh.npz'
+    sshfname = 'calcs/ssh.npz'
 
-fig, axarr = plt.subplots(1,2)
-fig.set_size_inches(13.675, 6.6125)
-fig.subplots_adjust(left=0.04, bottom=0.15, right=1.0, top=0.96, wspace=0.07, hspace=0.04)
+    fig, axarr = plt.subplots(1,2)
+    fig.set_size_inches(13.675, 6.6125)
+    fig.subplots_adjust(left=0.04, bottom=0.15, right=1.0, top=0.96, wspace=0.07, hspace=0.04)
 
-for i, ax in enumerate(axarr):
+    for i, ax in enumerate(axarr):
 
-    # Titles for subplots
-    if i==0:
+        # Titles for subplots
+        if i==0:
 
-        tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
-        ax.set_title('Winter')
-        # ind = zetaw<0
-        # ax.contourf(grid['xr'].T, grid['yr'].T, zetaw[ind].mean(axis=0), cmap='Blues', levels=levels, extend='min')
-        # ax.contourf(grid['xr'].T, grid['yr'].T, abs(zetaw).mean(axis=0), cmap='Reds', levels=levels, extend='max')
-        # ax.contourf(grid['xr'].T, grid['yr'].T, zetaw.mean(axis=0), cmap='RdBu_r', levels=levels, extend='both')
-        ax.contourf(grid['xr'].T, grid['yr'].T, zetaw.mean(axis=0)+0.18, cmap='Reds', levels=levels, extend='both')
+            tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
+            ax.set_title('Winter')
+            # ind = zetaw<0
+            # ax.contourf(grid['xr'].T, grid['yr'].T, zetaw[ind].mean(axis=0), cmap='Blues', levels=levels, extend='min')
+            # ax.contourf(grid['xr'].T, grid['yr'].T, abs(zetaw).mean(axis=0), cmap='Reds', levels=levels, extend='max')
+            # ax.contourf(grid['xr'].T, grid['yr'].T, zetaw.mean(axis=0), cmap='RdBu_r', levels=levels, extend='both')
+            ax.contourf(grid['xr'].T, grid['yr'].T, zetaw.mean(axis=0)+0.18, cmap='Reds', levels=levels, extend='both')
 
-    elif i==1:
+        elif i==1:
 
-        tracpy.plotting.background(grid=grid, ax=ax, parslabels=[0,0,0,0], mers=np.arange(-100, -80, 2))
-        ax.set_title('Summer')
-        # ind = zetas<0
-        # mappable = ax.contourf(grid['xr'].T, grid['yr'].T, zetas[ind].mean(axis=0), cmap='Reds', levels=levels, extend='min')
-        # mappable = ax.contourf(grid['xr'].T, grid['yr'].T, abs(zetas).mean(axis=0), cmap='Reds', levels=levels, extend='max')
-        # mappable = ax.contourf(grid['xr'].T, grid['yr'].T, zetas.mean(axis=0), cmap='RdBu_r', levels=levels, extend='both')
-        mappable = ax.contourf(grid['xr'].T, grid['yr'].T, zetas.mean(axis=0), cmap='Reds', levels=levels, extend='both')
+            tracpy.plotting.background(grid=grid, ax=ax, parslabels=[0,0,0,0], mers=np.arange(-100, -80, 2))
+            ax.set_title('Summer')
+            # ind = zetas<0
+            # mappable = ax.contourf(grid['xr'].T, grid['yr'].T, zetas[ind].mean(axis=0), cmap='Reds', levels=levels, extend='min')
+            # mappable = ax.contourf(grid['xr'].T, grid['yr'].T, abs(zetas).mean(axis=0), cmap='Reds', levels=levels, extend='max')
+            # mappable = ax.contourf(grid['xr'].T, grid['yr'].T, zetas.mean(axis=0), cmap='RdBu_r', levels=levels, extend='both')
+            mappable = ax.contourf(grid['xr'].T, grid['yr'].T, zetas.mean(axis=0), cmap='Reds', levels=levels, extend='both')
 
-    # zmax = np.nanmax((zmaxw,zmaxs))
+        # zmax = np.nanmax((zmaxw,zmaxs))
 
-# np.savez(sshfname, zetaw=zetaw.filled(), zetas=zetas.filled(), xr=grid['xr'].T, yr=grid['yr'].T)
+    # np.savez(sshfname, zetaw=zetaw.filled(), zetas=zetas.filled(), xr=grid['xr'].T, yr=grid['yr'].T)
 
-# Horizontal colorbar below plot
-cax = fig.add_axes([0.25, 0.075, 0.5, 0.02]) #colorbar axes
-cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
-cb.set_label('Mean sea surface height [m]')
+    # Horizontal colorbar below plot
+    cax = fig.add_axes([0.25, 0.075, 0.5, 0.02]) #colorbar axes
+    cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
+    cb.set_label('Mean sea surface height [m]')
 
-# fig.savefig('figures/ssh/seasonal_min-mean.png', bbox_inches='tight')
-# fig.savefig('figures/ssh/seasonal_abs-mean.png', bbox_inches='tight')
-# fig.savefig('figures/ssh/seasonal_mean.png', bbox_inches='tight')
-fig.savefig('figures/ssh/seasonal_mean-shifted.png', bbox_inches='tight')
+    # fig.savefig('figures/ssh/seasonal_min-mean.png', bbox_inches='tight')
+    # fig.savefig('figures/ssh/seasonal_abs-mean.png', bbox_inches='tight')
+    # fig.savefig('figures/ssh/seasonal_mean.png', bbox_inches='tight')
+    fig.savefig('figures/ssh/seasonal_mean-shifted.png', bbox_inches='tight')
 
 
+elif whichtime == 'interannual':
+
+    Years = np.arange(2004,2011)
+    xr = grid['xr'].T; yr = grid['yr'].T
+    zeta = np.zeros((Years.size,xr.shape[0],xr.shape[1]))
+
+    sshfname = 'calcs/' + whichtime + '-' + whichseason + '-ssh-mean.npz'
+
+    if not os.path.exists(sshfname):
+        for i,Year in enumerate(Years):
+            # desired time indices for average, 2004-2011 and Jan or Feb
+            tinds =  find((Year==years) * ((months==1) + (months==2))) # loop through season
+            for tind in tinds:
+                zeta[i,:,:] = zeta[i,:,:] + (d.variables['zeta'][tind,:,:])
+                # zetaw.set_fill_value(np.nan)
+                # zetaw = zetaw.filled()
+                # zmaxw = np.nanmax(abs(zetaw))
+
+        np.savez(sshfname, zeta=zeta/tinds.size, xr=xr, yr=yr)
+    else:
+        zeta = np.load(sshfname)['zeta']
+
+    # mean
+    # levels = np.arange(0, .22, 0.02)
+    # levels = np.arange(-.195, .21, 0.03)
+    levels = np.linspace(-.15, .2, 11)
+
+    fig, axarr = plt.subplots(2,4)
+    fig.set_size_inches(13.4, 6.6125)
+    fig.subplots_adjust(left=0.03, bottom=0.15, right=1.0, top=0.96, wspace=0.03, hspace=0.11)
+
+    for i, ax in enumerate(axarr.flatten()):
+       # Titles for subplots
+        if i==4:
+            tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
+            ax.set_title(str(2004+i))
+        elif i==7:
+            ax.set_frame_on(False)
+            ax.set_axis_off()
+        else:
+            tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2), 
+                merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
+            ax.set_title(str(2004+i))
+
+        if i<7:
+            mappable = ax.contourf(xr, yr, zeta[i,:,:], cmap='Reds')#, levels=levels, extend='both')
+
+        # zmax = np.nanmax((zmaxw,zmaxs))
+
+
+    # Horizontal colorbar below plot
+    cax = fig.add_axes([0.25, 0.075, 0.5, 0.02]) #colorbar axes
+    cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
+    cb.set_label('Mean sea surface height [m]')
+
+    fig.savefig('figures/ssh/' + whichtime + '-' + whichseason + '_mean.png', bbox_inches='tight')

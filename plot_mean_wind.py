@@ -6,27 +6,46 @@ from mpl_toolkits.basemap import Basemap
 import netCDF4 as netCDF
 from datetime import datetime
 from matplotlib.mlab import find
+import glob
 
 
 tidx = -1       # just get the final frame, for now.
 dx = 25; dy = 25;
 scale = 1.0
 # url = 'http://testbedapps-dev.sura.org/thredds/dodsC/alldata/Shelf_Hypoxia/tamu/roms/tamu_roms.nc'
-url = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+# url = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+# vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
+
+grid = netCDF.Dataset(grid_filename)
 
 # Times to include in average
-year = 2004
+year = 2004; 
 # startmonth = 7; endmonth = 9; season = 'summer'
 startmonth = 1; endmonth = 4; season = 'winter'
 startdate = datetime(year, startmonth, 1, 0, 0)
 enddate = datetime(year, endmonth, 1, 0, 0)
+# startdate = datetime(year, startmonth, 15, 0, 0)
+# enddate = datetime(year, endmonth, 15, 0, 0)
 
 doplot = 0 # for 0, just save calculation
+
+if year<=2012:
+    years = np.arange(2004,year+1)
+    url = []
+    for Year in years:
+        url.extend(np.sort(glob.glob('/home/kthyng/shelf/' + str(Year) + '/ocean_his_????.nc')))
+elif (year==2013) or (year==2014):
+    years = np.arange(2013,2015)
+    url = []
+    for Year in years:
+        url.extend(np.sort(glob.glob('/home/kthyng/shelf/' + str(Year) + '/ocean_his_*.nc')))
 
 #####################################################################################
 
 nc = netCDF.Dataset(url)
 print 'made it past thredds'
+
 t = nc.variables['ocean_time'][:]
 units = nc.variables['ocean_time'].units
 starttime = netCDF.date2num(startdate, units)
@@ -118,10 +137,10 @@ def rot2d(x, y, ang):
     return xr, yr
 
 
-mask = nc.variables['mask_rho'][:]
-lon_rho = nc.variables['lon_rho'][:]
-lat_rho = nc.variables['lat_rho'][:]
-anglev = nc.variables['angle'][:]
+mask = grid.variables['mask_rho'][:]
+lon_rho = grid.variables['lon_rho'][:]
+lat_rho = grid.variables['lat_rho'][:]
+anglev = grid.variables['angle'][:]
 
 x_rho, y_rho = basemap(lon_rho, lat_rho)
 
