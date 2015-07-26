@@ -9,25 +9,24 @@ from matplotlib.mlab import find
 
 
 tidx = -1       # just get the final frame, for now.
-subsample = 9  # roughly every third point in each direction (3**2 = 9)
 dx = 25; dy = 25;
 scale = 1.0
 # url = 'http://testbedapps-dev.sura.org/thredds/dodsC/alldata/Shelf_Hypoxia/tamu/roms/tamu_roms.nc'
 url = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
 
 # Times to include in average
-year = 2006; 
-startmonth = 7; endmonth = 9; season = 'summer'
-# startmonth = 1; endmonth = 3; season = 'winter'
-startdate = datetime(year, startmonth, 15, 0, 0)
-enddate = datetime(year, endmonth, 15, 0, 0)
+year = 2004
+# startmonth = 7; endmonth = 9; season = 'summer'
+startmonth = 1; endmonth = 4; season = 'winter'
+startdate = datetime(year, startmonth, 1, 0, 0)
+enddate = datetime(year, endmonth, 1, 0, 0)
 
 doplot = 0 # for 0, just save calculation
 
 #####################################################################################
 
 nc = netCDF.Dataset(url)
-
+print 'made it past thredds'
 t = nc.variables['ocean_time'][:]
 units = nc.variables['ocean_time'].units
 starttime = netCDF.date2num(startdate, units)
@@ -170,4 +169,4 @@ if doplot:
 # Save information
 x=x_rho[::dy, ::dx]; y=y_rho[::dy, ::dx]
 u=u[::dy,  ::dx].data; v=v[::dy,  ::dx].data
-np.savez('calcs/wind_stress/' + str(year) + season + '.npz', x=x, y=y, u=u, v=v)
+np.savez('calcs/wind_stress/1st/jfm/' + str(year) + season + '.npz', x=x, y=y, u=u, v=v)
