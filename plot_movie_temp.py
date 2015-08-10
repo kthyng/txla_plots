@@ -35,7 +35,7 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
-year = 2004
+year = 2007
 
 
 
@@ -161,7 +161,7 @@ for plotdate in plotdates:
     itwind = bisect.bisect_left(datesWind, plotdate) # index for wind at this time
     itriver = bisect.bisect_left(datesRiver, plotdate) # index for river at this time
 
-    figname = 'figures/full/' + datesModel[itmodel].isoformat()[0:13] + '.png'
+    figname = 'figures/temp/movies/' + datesModel[itmodel].isoformat()[0:13] + '.png'
 
     # Don't redo plot
     if os.path.exists(figname):
