@@ -35,7 +35,7 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
-year = 2006
+year = 2004
 
 
 
@@ -117,7 +117,7 @@ elif year == 2014:
 unitsWind = (w.variables['time'].units).replace('/','-')
 datesWind = netCDF.num2date(w.variables['time'][:], unitsWind)
 # datesWind = datesModel
-wdx = 18; wdy = 30 # in indices
+wdx = 25; wdy = 40 # in indices
 ##
 
 ## River forcing ##
@@ -173,15 +173,22 @@ for plotdate in plotdates:
     ax.set_frame_on(False) # kind of like it without the box
     tracpy.plotting.background(grid=grid, ax=ax, outline=False, mers=np.arange(-97, -87), merslabels=[0, 0, 1, 0], pars=np.arange(23, 32))
 
+    # Label isobaths
+    ax.text(0.85, 0.865, '10 m', transform=ax.transAxes, fontsize=9, color='0.4', rotation=45)
+    ax.text(0.88, 0.862, '20', transform=ax.transAxes, fontsize=9, color='0.4', rotation=45)
+    ax.text(0.87, 0.835, '50', transform=ax.transAxes, fontsize=9, color='0.4', rotation=45)
+    ax.text(0.89, 0.825, '100', transform=ax.transAxes, fontsize=9, color='0.4', rotation=45)
+    ax.text(0.9, 0.803, '450', transform=ax.transAxes, fontsize=9, color='0.4', rotation=45)
+
     # Date
     date = datesModel[itmodel].strftime('%Y %b %02d %H:%M')
     # greyfont = plt.matplotlib.font_manager.FontProperties() # grab default font properties
     # greyfont.set_color('')
-    ax.text(0.77, 0.25, date, fontsize=15, color='0.2', transform=ax.transAxes, 
+    ax.text(0.35, 0.425, date, fontsize=18, color='0.2', transform=ax.transAxes, 
                 bbox=dict(facecolor='white', edgecolor='white', boxstyle='round'))
 
     # PONG
-    ax.text(0.525, 0.94, 'pong.tamu.edu', fontsize=12, transform=ax.transAxes, color='0.3')
+    ax.text(0.6, 0.97, 'pong.tamu.edu', fontsize=12, transform=ax.transAxes, color='0.3')
 
     # Plot surface salinity
     # Note: skip ghost cells in x and y so that can properly plot grid cell boxes with pcolormesh
@@ -205,8 +212,11 @@ for plotdate in plotdates:
     # ax.pcolormesh(xpsi[172:189,332:341], ypsi[172:189,332:341], salt[172:189,332:341], cmap=cmap, vmin=0, vmax=36, zorder=2)
 
     # Mississippi river discharge rate
-    axr = fig.add_axes([0.35, 0.05, 0.6, .2])
-    axr.set_frame_on(False) # kind of like it without the box
+    axr = fig.add_axes([0.35, 0.2, 0.6, .2])
+    # axr.set_frame_on(False) # kind of like it without the box
+    for axis in ['top','left','right']:
+        axr.spines[axis].set_linewidth(0.05)
+    axr.spines['bottom'].set_linewidth(0.0)
     # make background rectangle so lines don't overlap
     axr.fill_between(tRiver[itstartRiver:itriver+1], R[itstartRiver:itriver+1], alpha=0.5, facecolor='0.4', edgecolor='0.4', zorder=2)
     axr.plot(tRiver[itstartRiver:itriver], R[itstartRiver:itriver], '-', color='0.4')
@@ -235,7 +245,7 @@ for plotdate in plotdates:
     # label month ticks
     for i in xrange(len(mticks)):
         axr.text(tRiver[mticks[i]], 2500, mticknames[i], fontsize=9, color='0.2')
-    axr.add_patch( patches.Rectangle( (0.3, 0.01), 0.7, 0.2, transform=ax.transAxes, color='white', zorder=1))    
+    axr.add_patch( patches.Rectangle( (0.3, 0.162), 0.7, 0.2, transform=ax.transAxes, color='white', zorder=1))    
 
     # Surface currents over domain, use psi grid for common locations
     u = op.resize(np.squeeze(m.variables['u'][itmodel,-1,:,:]), 0)
@@ -245,15 +255,15 @@ for plotdate in plotdates:
             color='k', alpha=0.4, pivot='middle', scale=40, width=0.001)
     # Q = ax.quiver(xpsi[cdy::cdy,cdy::cdy], ypsi[cdy::cdy,cdy::cdy], Uwind[cdy::cdy,cdy::cdy], Vwind[cdy::cdy,cdy::cdy], 
     #         color='k', alpha=0.1, scale=400, pivot='middle', headlength=3, headaxislength=2.8)
-    qk = ax.quiverkey(Q, 0.18, 0.775, 0.5, r'0.5 m$\cdot$s$^{-1}$ current', labelcolor='0.2', fontproperties={'size': '10'})
+    qk = ax.quiverkey(Q, 0.18, 0.795, 0.5, r'0.5 m$\cdot$s$^{-1}$ current', labelcolor='0.2', fontproperties={'size': '10'})
 
     # Wind over the domain
     Uwind = w.variables['Uwind'][itwind,:,:]
     Vwind = w.variables['Vwind'][itwind,:,:]
     Uwind, Vwind = rot2d(Uwind, Vwind, anglev)
-    Q = ax.quiver(xr[wdy::wdy,wdx::wdx], yr[wdy::wdy,wdx::wdx], Uwind[wdy::wdy,wdx::wdx], Vwind[wdy::wdy,wdx::wdx], 
-            color='k', alpha=0.15, scale=400, pivot='middle', headlength=3, headaxislength=2.8)
-    qk = ax.quiverkey(Q, 0.18, 0.825, 10, r'10 m$\cdot$s$^{-1}$ wind', labelcolor='0.2', fontproperties={'size': '10'})
+    Q = ax.quiver(xr[wdy/2::wdy,wdx::wdx], yr[wdy/2::wdy,wdx::wdx], Uwind[wdy/2::wdy,wdx::wdx], Vwind[wdy/2::wdy,wdx::wdx], 
+            color='k', alpha=0.1, scale=300, pivot='middle', headlength=3, headaxislength=2.8)
+    qk = ax.quiverkey(Q, 0.18, 0.845, 10, r'10 m$\cdot$s$^{-1}$ wind', labelcolor='0.2', fontproperties={'size': '10'})
 
     # sustr = w.variables['sustr'][itwind,:,:]
     # svstr = w.variables['svstr'][itwind,:,:]
@@ -263,11 +273,14 @@ for plotdate in plotdates:
     # qk = ax.quiverkey(Q, 0.18, 0.65, 0.1, label=r'0.1 N m$^{2}$', labelcolor='0.2', fontproperties={'size': '10'})
 
     # Colorbar in upper left corner
-    cax = fig.add_axes([0.09, 0.9225, 0.35, 0.025]) #colorbar axes
+    cax = fig.add_axes([0.09, 0.91, 0.35, 0.025]) #colorbar axes
     cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')
     cb.set_label(r'Surface temperature [$^\circ\!$C]', fontsize=14, color='0.2')
     cb.ax.tick_params(labelsize=14, length=2, color='0.2', labelcolor='0.2') 
     cb.set_ticks(ticks)
+    # box behind to hide lines
+    ax.add_patch( patches.Rectangle( (0.005, 0.925), 0.42, 0.0625, transform=ax.transAxes, color='0.8', zorder=3))    
+    ax.add_patch( patches.Rectangle( (0.1, 0.895), 0.24, 0.029, transform=ax.transAxes, color='0.8', zorder=3))    
     # change colorbar tick color http://stackoverflow.com/questions/9662995/matplotlib-change-title-and-colorbar-text-and-tick-colors
     cbtick = plt.getp(cb.ax.axes, 'yticklabels')
     plt.setp(cbtick, color='0.2')
