@@ -35,7 +35,7 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
-year = 2004
+year = 2014
 
 
 
@@ -262,7 +262,7 @@ for plotdate in plotdates:
     Vwind = w.variables['Vwind'][itwind,:,:]
     Uwind, Vwind = rot2d(Uwind, Vwind, anglev)
     Q = ax.quiver(xr[wdy/2::wdy,wdx::wdx], yr[wdy/2::wdy,wdx::wdx], Uwind[wdy/2::wdy,wdx::wdx], Vwind[wdy/2::wdy,wdx::wdx], 
-            color='k', alpha=0.1, scale=300, pivot='middle', headlength=3, headaxislength=2.8)
+            color='k', alpha=0.3, scale=300, pivot='middle', headlength=3, headaxislength=2.8)
     qk = ax.quiverkey(Q, 0.18, 0.845, 10, r'10 m$\cdot$s$^{-1}$ wind', labelcolor='0.2', fontproperties={'size': '10'})
 
     # sustr = w.variables['sustr'][itwind,:,:]

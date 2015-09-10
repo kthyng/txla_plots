@@ -20,7 +20,7 @@ grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
 grid = netCDF.Dataset(grid_filename)
 
 # Times to include in average
-year = 2004; 
+year = 2014
 # startmonth = 7; endmonth = 9; season = 'summer'
 startmonth = 1; endmonth = 4; season = 'winter'
 startdate = datetime(year, startmonth, 1, 0, 0)
@@ -43,7 +43,7 @@ elif (year==2013) or (year==2014):
 
 #####################################################################################
 
-nc = netCDF.Dataset(url)
+nc = netCDF.MFDataset(url)
 print 'made it past thredds'
 
 t = nc.variables['ocean_time'][:]

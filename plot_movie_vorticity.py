@@ -1,5 +1,5 @@
 '''
-Make salinity plots for movies of the full domain.
+Make speed plots for movies of the full domain.
 '''
 
 import matplotlib as mpl
@@ -35,7 +35,7 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
-year = 2013
+year = 2009
 
 
 def rot2d(x, y, ang):
@@ -91,8 +91,8 @@ else:
 #     os.makedirs('figures/' + str(year))
 
 # Colormap for model output
-cmap = cmocean.cm.eta
-cmin = -0.3; cmax = 0.3; dc = 0.1
+cmap = cmocean.cm.vort
+cmin = -2; cmax = 2; dc = 1.
 ticks = np.arange(cmin, cmax+dc, dc)
 # levels = (37-np.exp(np.linspace(0,np.log(36.), 10)))[::-1]-1 # log for salinity
 # cmap = cmPong.salinity(cmocean.cm.salt, levels)
@@ -160,7 +160,7 @@ for plotdate in plotdates:
     itwind = bisect.bisect_left(datesWind, plotdate) # index for wind at this time
     itriver = bisect.bisect_left(datesRiver, plotdate) # index for river at this time
 
-    figname = 'figures/ssh/movies/' + datesModel[itmodel].isoformat()[0:13] + '.png'
+    figname = 'figures/vort/movies/' + datesModel[itmodel].isoformat()[0:13] + '.png'
 
     # Don't redo plot
     if os.path.exists(figname):
@@ -191,7 +191,20 @@ for plotdate in plotdates:
 
     # Plot surface salinity
     # Note: skip ghost cells in x and y so that can properly plot grid cell boxes with pcolormesh
-    salt = np.squeeze(m.variables['zeta'][itmodel,1:-1,1:-1])
+    u = np.squeeze(m.variables['u'][itmodel,-1,:,:])
+    v = np.squeeze(m.variables['v'][itmodel,-1,:,:])
+    # u, v = rot2d(u, v, op.resize(op.resize(anglev, 0), 1))
+    # Vertical vorticity, and assuming that vectors don't need to be rotated before calculating vorticity.
+    pm = op.resize(op.resize(m.variables['pm'][:], 1), 0)
+    pn = op.resize(op.resize(m.variables['pn'][:], 1), 0)
+    # import pdb; pdb.set_trace()
+    salt = (v[:, 1:] - v[:, :-1])*pm - (u[1:, :] - u[:-1, :])*pn
+    salt /= op.resize(op.resize(m.variables['f'][:], 1), 0)
+    # u = op.resize(np.squeeze(m.variables['u'][itmodel,-1,:,:]), 0)
+    # v = op.resize(np.squeeze(m.variables['v'][itmodel,-1,:,:]), 1)
+    # u, v = rot2d(u, v, op.resize(op.resize(anglev, 0), 1))
+    # salt = np.sqrt(u**2 + v**2)  # speed
+    # salt = np.squeeze(m.variables['zeta'][itmodel,1:-1,1:-1])
     mappable = ax.pcolormesh(xpsi, ypsi, salt, cmap=cmap, vmin=cmin, vmax=cmax)
     # # Plot Sabine too, which gets covered by the basemap
     # sabmask = ~salt[172:189,332:341].mask.astype(bool)
@@ -247,11 +260,11 @@ for plotdate in plotdates:
     axr.add_patch( patches.Rectangle( (0.3, 0.162), 0.7, 0.2, transform=ax.transAxes, color='white', zorder=1))    
 
     # Surface currents over domain, use psi grid for common locations
-    u = op.resize(np.squeeze(m.variables['u'][itmodel,-1,:,:]), 0)
-    v = op.resize(np.squeeze(m.variables['v'][itmodel,-1,:,:]), 1)
+    u = op.resize(u, 0)
+    v = op.resize(v, 1)
     u, v = rot2d(u, v, op.resize(op.resize(anglev, 0), 1))
     Q = ax.quiver(xpsi[cdy::cdy,cdx::cdx], ypsi[cdy::cdy,cdx::cdx], u[cdy::cdy,cdx::cdx], v[cdy::cdy,cdx::cdx], 
-            color='k', alpha=0.4, pivot='middle', scale=40, width=0.001)
+            color='k', alpha=0.8, pivot='middle', scale=40, width=0.001)
     # Q = ax.quiver(xpsi[cdy::cdy,cdy::cdy], ypsi[cdy::cdy,cdy::cdy], Uwind[cdy::cdy,cdy::cdy], Vwind[cdy::cdy,cdy::cdy], 
     #         color='k', alpha=0.1, scale=400, pivot='middle', headlength=3, headaxislength=2.8)
     qk = ax.quiverkey(Q, 0.18, 0.795, 0.5, r'0.5 m$\cdot$s$^{-1}$ current', labelcolor='0.2', fontproperties={'size': '10'})
@@ -261,7 +274,7 @@ for plotdate in plotdates:
     Vwind = w.variables['Vwind'][itwind,:,:]
     Uwind, Vwind = rot2d(Uwind, Vwind, anglev)
     Q = ax.quiver(xr[wdy/2::wdy,wdx::wdx], yr[wdy/2::wdy,wdx::wdx], Uwind[wdy/2::wdy,wdx::wdx], Vwind[wdy/2::wdy,wdx::wdx], 
-            color='k', alpha=0.3, scale=300, pivot='middle', headlength=3, headaxislength=2.8)
+            color='k', alpha=0.4, scale=300, pivot='middle', headlength=3, headaxislength=2.8)
     qk = ax.quiverkey(Q, 0.18, 0.845, 10, r'10 m$\cdot$s$^{-1}$ wind', labelcolor='0.2', fontproperties={'size': '10'})
 
     # sustr = w.variables['sustr'][itwind,:,:]
@@ -273,8 +286,8 @@ for plotdate in plotdates:
 
     # Colorbar in upper left corner
     cax = fig.add_axes([0.09, 0.91, 0.35, 0.025]) #colorbar axes
-    cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')
-    cb.set_label('Sea surface height [m]', fontsize=14, color='0.2')
+    cb = fig.colorbar(mappable, cax=cax, orientation='horizontal', extend='both')
+    cb.set_label('Normalized surface vertical vorticity [$\zeta/f$]   ', fontsize=12, color='0.2')
     cb.ax.tick_params(labelsize=14, length=2, color='0.2', labelcolor='0.2') 
     cb.set_ticks(ticks)
     # box behind to hide lines

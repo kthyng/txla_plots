@@ -1,5 +1,5 @@
 '''
-Make salinity plots for movies of the full domain.
+Make speed plots for movies of the full domain.
 '''
 
 import matplotlib as mpl
@@ -35,7 +35,7 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
-year = 2013
+year = 2006
 
 
 def rot2d(x, y, ang):
@@ -91,8 +91,8 @@ else:
 #     os.makedirs('figures/' + str(year))
 
 # Colormap for model output
-cmap = cmocean.cm.eta
-cmin = -0.3; cmax = 0.3; dc = 0.1
+cmap = cmocean.cm.u
+cmin = -1.0; cmax = 1.0; dc = 0.5
 ticks = np.arange(cmin, cmax+dc, dc)
 # levels = (37-np.exp(np.linspace(0,np.log(36.), 10)))[::-1]-1 # log for salinity
 # cmap = cmPong.salinity(cmocean.cm.salt, levels)
@@ -160,7 +160,7 @@ for plotdate in plotdates:
     itwind = bisect.bisect_left(datesWind, plotdate) # index for wind at this time
     itriver = bisect.bisect_left(datesRiver, plotdate) # index for river at this time
 
-    figname = 'figures/ssh/movies/' + datesModel[itmodel].isoformat()[0:13] + '.png'
+    figname = 'figures/u/movies/' + datesModel[itmodel].isoformat()[0:13] + '.png'
 
     # Don't redo plot
     if os.path.exists(figname):
@@ -191,7 +191,11 @@ for plotdate in plotdates:
 
     # Plot surface salinity
     # Note: skip ghost cells in x and y so that can properly plot grid cell boxes with pcolormesh
-    salt = np.squeeze(m.variables['zeta'][itmodel,1:-1,1:-1])
+    u = op.resize(np.squeeze(m.variables['u'][itmodel,-1,:,:]), 0)
+    salt = u  # along-shore velocity
+    v = op.resize(np.squeeze(m.variables['v'][itmodel,-1,:,:]), 1)
+    u, v = rot2d(u, v, op.resize(op.resize(anglev, 0), 1))
+    # salt = np.squeeze(m.variables['zeta'][itmodel,1:-1,1:-1])
     mappable = ax.pcolormesh(xpsi, ypsi, salt, cmap=cmap, vmin=cmin, vmax=cmax)
     # # Plot Sabine too, which gets covered by the basemap
     # sabmask = ~salt[172:189,332:341].mask.astype(bool)
@@ -247,9 +251,9 @@ for plotdate in plotdates:
     axr.add_patch( patches.Rectangle( (0.3, 0.162), 0.7, 0.2, transform=ax.transAxes, color='white', zorder=1))    
 
     # Surface currents over domain, use psi grid for common locations
-    u = op.resize(np.squeeze(m.variables['u'][itmodel,-1,:,:]), 0)
-    v = op.resize(np.squeeze(m.variables['v'][itmodel,-1,:,:]), 1)
-    u, v = rot2d(u, v, op.resize(op.resize(anglev, 0), 1))
+    # u = op.resize(np.squeeze(m.variables['u'][itmodel,-1,:,:]), 0)
+    # v = op.resize(np.squeeze(m.variables['v'][itmodel,-1,:,:]), 1)
+    # u, v = rot2d(u, v, op.resize(op.resize(anglev, 0), 1))
     Q = ax.quiver(xpsi[cdy::cdy,cdx::cdx], ypsi[cdy::cdy,cdx::cdx], u[cdy::cdy,cdx::cdx], v[cdy::cdy,cdx::cdx], 
             color='k', alpha=0.4, pivot='middle', scale=40, width=0.001)
     # Q = ax.quiver(xpsi[cdy::cdy,cdy::cdy], ypsi[cdy::cdy,cdy::cdy], Uwind[cdy::cdy,cdy::cdy], Vwind[cdy::cdy,cdy::cdy], 
@@ -273,8 +277,8 @@ for plotdate in plotdates:
 
     # Colorbar in upper left corner
     cax = fig.add_axes([0.09, 0.91, 0.35, 0.025]) #colorbar axes
-    cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')
-    cb.set_label('Sea surface height [m]', fontsize=14, color='0.2')
+    cb = fig.colorbar(mappable, cax=cax, orientation='horizontal', extend='both')
+    cb.set_label('Surface along-shore velocity [ms$^{-1}\!$]', fontsize=13, color='0.2')
     cb.ax.tick_params(labelsize=14, length=2, color='0.2', labelcolor='0.2') 
     cb.set_ticks(ticks)
     # box behind to hide lines
