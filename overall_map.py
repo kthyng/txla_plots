@@ -19,7 +19,7 @@ dogulf = False
 
 llcrnrlon=-(108); llcrnrlat=16; 
 urcrnrlon=-(74); urcrnrlat=44; projection='lcc'
-lat_0=25.; lon_0=-89; resolution='i'; area_thresh=0.
+lat_0=25.; lon_0=-89; resolution='f'; area_thresh=0.
 basemap_gulf = Basemap(llcrnrlon=llcrnrlon,
              llcrnrlat=llcrnrlat,
              urcrnrlon=urcrnrlon,
@@ -34,7 +34,8 @@ if doshelf:
     llcrnrlon=-(98+3/60.+40/3600.); llcrnrlat=25; 
     urcrnrlon=-88; urcrnrlat=30+38/60.+51/3600.; projection='lcc'
 
-    g_shelf = netCDF.Dataset('http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc')
+    # g_shelf = netCDF.Dataset('http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc')
+    g_shelf = netCDF.Dataset('../../grid.nc')
 
 if dobay:
     p = pyproj.Proj(proj='utm', zone='15')
@@ -133,6 +134,12 @@ if doshelf:
     # Shelf grid
     dx = 1; dy = 1;
     ax_shelf.plot(xr2_shelf[::dx], yr2_shelf[::dy], xr2_shelf[::dx].T, yr2_shelf[::dy].T, 'darkcyan',alpha=.2)
+
+    # Add isobaths to shelf area
+    h = g_shelf.variables['h'][:]
+    hs = [20, 50, 100, 500]
+    cs = ax_shelf.contour(xr2_shelf, yr2_shelf, h, hs, colors='0.1', lw=3)
+    ax_shelf.clabel(cs, manual=True, fmt='%2.0f', fontsize=8)
 
     # sub region of the original image
     x1, x2, y1, y2 = 1080000, 2216090, 630000, 1530000
