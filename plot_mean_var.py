@@ -93,22 +93,28 @@ proj.fillcontinents('0.8', ax=ax)
 proj.drawparallels(np.arange(20,40), dashes=(1, 1), linewidth=0.15, labels=[1, 0, 0, 0], ax=ax)
 proj.drawmeridians(np.arange(-100, -80), dashes=(1, 1), linewidth=0.15, labels=[0, 0, 0, 1], ax=ax)
 ax.contour(grid.x_rho, grid.y_rho, ds['h'], np.hstack(([10, 20], np.arange(50, 500, 50))), colors='0.2', linewidths=0.5, alpha=0.4)
+ax.contour(grid.x_rho, grid.y_rho, ds['h'], [100], colors='0.0', linewidths=0.75, alpha=0.4)
 
 # tracpy.plotting.background(grid=grid, ax=ax, outline=False, mers=np.arange(-97, -87), merslabels=[0, 0, 1, 0], pars=np.arange(23, 32))
 
-# Label isobaths
-ax.text(0.85, 0.865, '10 m', transform=ax.transAxes, fontsize=9, color='0.4', rotation=45)
-ax.text(0.88, 0.862, '20', transform=ax.transAxes, fontsize=9, color='0.4', rotation=45)
-ax.text(0.87, 0.835, '50', transform=ax.transAxes, fontsize=9, color='0.4', rotation=45)
-ax.text(0.89, 0.825, '100', transform=ax.transAxes, fontsize=9, color='0.4', rotation=45)
-ax.text(0.9, 0.803, '450', transform=ax.transAxes, fontsize=9, color='0.4', rotation=45)
+# # Label isobaths
+# ax.text(0.85, 0.865, '10 m', transform=ax.transAxes, fontsize=9, color='0.25', rotation=45)
+# ax.text(0.88, 0.862, '20', transform=ax.transAxes, fontsize=9, color='0.25', rotation=45)
+# ax.text(0.87, 0.835, '50', transform=ax.transAxes, fontsize=9, color='0.25', rotation=45)
+# ax.text(0.89, 0.825, '100', transform=ax.transAxes, fontsize=9, color='0.25', rotation=45)
+# ax.text(0.9, 0.803, '450', transform=ax.transAxes, fontsize=9, color='0.25', rotation=45)
 
-# # Date
+# Date
 # date = datesModel[itmodel].strftime('%Y %b %02d %H:%M')
 # # greyfont = plt.matplotlib.font_manager.FontProperties() # grab default font properties
 # # greyfont.set_color('')
-# ax.text(0.35, 0.425, date, fontsize=18, color='0.2', transform=ax.transAxes, 
-#             bbox=dict(facecolor='white', edgecolor='white', boxstyle='round'))
+date = start.split('-')[0]
+if '-01' in start:
+    date += ' Winter'
+elif '-07' in start:
+    date += ' Summer'
+ax.text(0.6, 0.95, date, fontsize=18, color='0.2', transform=ax.transAxes, 
+            bbox=dict(facecolor='0.8', edgecolor='0.8', boxstyle='round'))
 
 # Plot surface salinity
 # Note: skip ghost cells in x and y so that can properly plot grid cell boxes with pcolormesh
@@ -143,8 +149,8 @@ svstr = ds['svstr'].loc[start:stop].data.mean(axis=0)
 # svstr = w.variables['svstr'][itwind,:,:]
 sustr, svstr = rot2d(op.resize(sustr,1)[1:-1,:], op.resize(svstr,0)[:,1:-1], anglev[1:-1, 1:-1])
 Q = ax.quiver(grid.x_rho[wdy+1::wdy,wdx+1::wdx], grid.y_rho[wdy+1::wdy,wdx+1::wdx], sustr[wdy::wdy,wdx::wdx], svstr[wdy::wdy,wdx::wdx], 
-        color='k', alpha=0.2, scale=1, pivot='middle', headlength=3, headaxislength=2.8)
-qk = ax.quiverkey(Q, 0.18, 0.81, 0.1, label=r'0.0001 N m$^{2}$', labelcolor='0.2', fontproperties={'size': '10'})
+        color='k', alpha=0.2, scale=1.0, pivot='middle', headlength=3, headaxislength=2.8)
+qk = ax.quiverkey(Q, 0.18, 0.81, 0.03, label=r'0.03 N m$^{2}$', labelcolor='0.2', fontproperties={'size': '10'})
 
 # Colorbar in upper left corner
 cax = fig.add_axes([0.09, 0.91, 0.35, 0.025]) #colorbar axes
@@ -152,14 +158,14 @@ cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')
 cb.set_label(r'Surface salinity [g$\cdot$kg$^{-1}$]', fontsize=14, color='0.2')
 cb.ax.tick_params(labelsize=14, length=2, color='0.2', labelcolor='0.2') 
 cb.set_ticks(ticks)
-# box behind to hide lines
-ax.add_patch( patches.Rectangle( (0.005, 0.925), 0.42, 0.0625, transform=ax.transAxes, color='0.8', zorder=3))    
-ax.add_patch( patches.Rectangle( (0.1, 0.895), 0.24, 0.029, transform=ax.transAxes, color='0.8', zorder=3))    
+# # box behind to hide lines
+# ax.add_patch( patches.Rectangle( (0.005, 0.925), 0.42, 0.0625, transform=ax.transAxes, color='0.8', zorder=3))    
+# ax.add_patch( patches.Rectangle( (0.1, 0.895), 0.24, 0.029, transform=ax.transAxes, color='0.8', zorder=3))    
 # change colorbar tick color http://stackoverflow.com/questions/9662995/matplotlib-change-title-and-colorbar-text-and-tick-colors
 cbtick = plt.getp(cb.ax.axes, 'yticklabels')
 plt.setp(cbtick, color='0.2')
 # pdb.set_trace()
 
 plt.savefig(figname)
-# plt.close(fig)
+plt.close(fig)
 
