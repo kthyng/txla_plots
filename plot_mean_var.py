@@ -40,9 +40,10 @@ mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 # start = '2006-01'
 # stop = '2006-02'
 
-start = '07'
-stop = '08'
+start = '01'
+stop = '02'
 years = np.arange(2004, 2015)
+name = 'Winter'
 
 
 def rot2d(x, y, ang):
@@ -84,17 +85,18 @@ grid = octant.grid.CGrid_geo(dsgrid['lon_vert'].data, dsgrid['lat_vert'].data, p
 
 
 
-figname = 'figures/means/salt+vectors' + start + 'to' + stop + '.png'
+# figname = 'figures/means/salt+vectors' + start + 'to' + stop + '.png'
+figname = 'figures/means/salt+vectors-' + name.lower() + '.png'
 
 # Set up plot
-fig = plt.figure(figsize=(10.1, 8.4), dpi=100)
+fig = plt.figure(figsize=(10.1, 8.75), dpi=100)
 ax = fig.add_axes([0.06, 0.00, 0.93, 0.97])
 ax.set_frame_on(False)  # kind of like it without the box
 proj.drawcoastlines(ax=ax)
 proj.fillcontinents('0.8', ax=ax)
 
 proj.drawparallels(np.arange(20,40), dashes=(1, 1), linewidth=0.15, labels=[1, 0, 0, 0], ax=ax)
-proj.drawmeridians(np.arange(-100, -80), dashes=(1, 1), linewidth=0.15, labels=[0, 0, 0, 1], ax=ax)
+proj.drawmeridians(np.arange(-100, -80), dashes=(1, 1), linewidth=0.15, labels=[0, 0, 1, 0], ax=ax)
 ax.contour(grid.x_rho, grid.y_rho, ds['h'], np.hstack(([10, 20], np.arange(50, 500, 50))), colors='0.2', linewidths=0.5, alpha=0.4)
 ax.contour(grid.x_rho, grid.y_rho, ds['h'], [100], colors='0.0', linewidths=0.75, alpha=0.4)
 
@@ -111,67 +113,70 @@ ax.contour(grid.x_rho, grid.y_rho, ds['h'], [100], colors='0.0', linewidths=0.75
 # date = datesModel[itmodel].strftime('%Y %b %02d %H:%M')
 # # greyfont = plt.matplotlib.font_manager.FontProperties() # grab default font properties
 # # greyfont.set_color('')
-date = start.split('-')[0]
-if '-01' in start:
-    date += ' Winter'
-elif '-07' in start:
-    date += ' Summer'
+# date = start.split('-')[0]
+if '01' in start:
+    date = 'Winter'
+elif '07' in start:
+    date = 'Summer'
 ax.text(0.6, 0.95, date, fontsize=18, color='0.2', transform=ax.transAxes, 
             bbox=dict(facecolor='0.8', edgecolor='0.8', boxstyle='round'))
 
-# Plot surface salinity
-# Note: skip ghost cells in x and y so that can properly plot grid cell boxes with pcolormesh
-salt = []
-for year in years:
-    salt.append(ds['salt'].loc[str(year) + '-' + start:str(year) + '-' + stop].isel(s_rho=-1, eta_rho=slice(1, -1), xi_rho=slice(1, -1)).data.mean(axis=0))
-salt = np.asarray(salt).mean(axis=0)
-# salt = np.squeeze(m.variables['salt'][itmodel,-1,1:-1,1:-1])
+calcsname = 'calcs/means/' + date + '.npz'
+
+if os.path.exists(calcsname):
+    d = np.load(calcsname)
+    salt = d['salt']; u = d['u']; v = d['v']; sustr = d['sustr']; svstr = d['svstr']
+else:
+    # Plot surface salinity
+    # Note: skip ghost cells in x and y so that can properly plot grid cell boxes with pcolormesh
+    salt = []
+    for year in years:
+        salt.append(ds['salt'].loc[str(year) + '-' + start:str(year) + '-' + stop].isel(s_rho=-1, eta_rho=slice(1, -1), xi_rho=slice(1, -1)).data.mean(axis=0))
+    salt = np.asarray(salt).mean(axis=0)
+    # salt = np.squeeze(m.variables['salt'][itmodel,-1,1:-1,1:-1])
+
+    # Surface currents over domain, use psi grid for common locations
+    u = []
+    for year in years:
+        u.append(ds['u'].loc[str(year) + '-' + start:str(year) + '-' + stop].isel(s_rho=-1).data.mean(axis=0))
+    u = np.asarray(u).mean(axis=0)
+    v = []
+    for year in years:
+        v.append(ds['v'].loc[str(year) + '-' + start:str(year) + '-' + stop].isel(s_rho=-1).data.mean(axis=0))
+    v = np.asarray(v).mean(axis=0)
+    u = op.resize(u, 0)
+    v = op.resize(v, 1)
+    anglev = ds['angle'].data
+    u, v = rot2d(u, v, op.resize(op.resize(anglev, 0), 1))
+
+    # wind stress
+    sustr = []
+    for year in years:
+        sustr.append(ds['sustr'].loc[str(year) + '-' + start:str(year) + '-' + stop].data.mean(axis=0))
+    sustr = np.asarray(sustr).mean(axis=0)
+    svstr = []
+    for year in years:
+        svstr.append(ds['svstr'].loc[str(year) + '-' + start:str(year) + '-' + stop].data.mean(axis=0))
+    svstr = np.asarray(svstr).mean(axis=0)
+    # sustr = w.variables['sustr'][itwind,:,:]
+    # svstr = w.variables['svstr'][itwind,:,:]
+    sustr, svstr = rot2d(op.resize(sustr,1)[1:-1,:], op.resize(svstr,0)[:,1:-1], anglev[1:-1, 1:-1])
+    np.savez(calcsname, salt=salt, u=u, v=v, sustr=sustr, svstr=svstr)
+
 mappable = ax.pcolormesh(grid.x_psi, grid.y_psi, salt, cmap=cmap, vmin=0, vmax=36)
 
-# Surface currents over domain, use psi grid for common locations
-u = []
-for year in years:
-    u.append(ds['u'].loc[str(year) + '-' + start:str(year) + '-' + stop].isel(s_rho=-1).data.mean(axis=0))
-u = np.asarray(u).mean(axis=0)
-v = []
-for year in years:
-    v.append(ds['v'].loc[str(year) + '-' + start:str(year) + '-' + stop].isel(s_rho=-1).data.mean(axis=0))
-v = np.asarray(v).mean(axis=0)
-u = op.resize(u, 0)
-v = op.resize(v, 1)
-anglev = ds['angle'].data
-u, v = rot2d(u, v, op.resize(op.resize(anglev, 0), 1))
 Q = ax.quiver(grid.x_psi[cdy::cdy,cdx::cdx], grid.y_psi[cdy::cdy,cdx::cdx], u[cdy::cdy,cdx::cdx], v[cdy::cdy,cdx::cdx], 
         color='k', alpha=0.4, pivot='middle', scale=40, width=0.001)
 # Q = ax.quiver(xpsi[cdy::cdy,cdy::cdy], ypsi[cdy::cdy,cdy::cdy], Uwind[cdy::cdy,cdy::cdy], Vwind[cdy::cdy,cdy::cdy], 
 #         color='k', alpha=0.1, scale=400, pivot='middle', headlength=3, headaxislength=2.8)
 qk = ax.quiverkey(Q, 0.18, 0.75, 0.5, r'0.5 m$\cdot$s$^{-1}$ current', labelcolor='0.2', fontproperties={'size': '10'})
 
-# Wind over the domain
-# Uwind = w.variables['Uwind'][itwind,:,:]
-# Vwind = w.variables['Vwind'][itwind,:,:]
-# Uwind, Vwind = rot2d(Uwind, Vwind, anglev)
-# Q = ax.quiver(xr[wdy/2::wdy,wdx::wdx], yr[wdy/2::wdy,wdx::wdx], Uwind[wdy/2::wdy,wdx::wdx], Vwind[wdy/2::wdy,wdx::wdx], 
-#         color='k', alpha=0.3, scale=300, pivot='middle', headlength=3, headaxislength=2.8)
-# qk = ax.quiverkey(Q, 0.18, 0.845, 10, r'10 m$\cdot$s$^{-1}$ wind', labelcolor='0.2', fontproperties={'size': '10'})
-
-sustr = []
-for year in years:
-    sustr.append(ds['sustr'].loc[str(year) + '-' + start:str(year) + '-' + stop].data.mean(axis=0))
-sustr = np.asarray(sustr).mean(axis=0)
-svstr = []
-for year in years:
-    svstr.append(ds['svstr'].loc[str(year) + '-' + start:str(year) + '-' + stop].data.mean(axis=0))
-svstr = np.asarray(svstr).mean(axis=0)
-# sustr = w.variables['sustr'][itwind,:,:]
-# svstr = w.variables['svstr'][itwind,:,:]
-sustr, svstr = rot2d(op.resize(sustr,1)[1:-1,:], op.resize(svstr,0)[:,1:-1], anglev[1:-1, 1:-1])
 Q = ax.quiver(grid.x_rho[wdy+1::wdy,wdx+1::wdx], grid.y_rho[wdy+1::wdy,wdx+1::wdx], sustr[wdy::wdy,wdx::wdx], svstr[wdy::wdy,wdx::wdx], 
         color='k', alpha=0.2, scale=1.0, pivot='middle', headlength=3, headaxislength=2.8)
 qk = ax.quiverkey(Q, 0.18, 0.81, 0.03, label=r'0.03 N m$^{2}$', labelcolor='0.2', fontproperties={'size': '10'})
 
 # Colorbar in upper left corner
-cax = fig.add_axes([0.09, 0.91, 0.35, 0.025]) #colorbar axes
+cax = fig.add_axes([0.09, 0.9, 0.35, 0.025]) #colorbar axes
 cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')
 cb.set_label(r'Surface salinity [g$\cdot$kg$^{-1}$]', fontsize=14, color='0.2')
 cb.ax.tick_params(labelsize=14, length=2, color='0.2', labelcolor='0.2') 
