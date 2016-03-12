@@ -37,9 +37,12 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
-start = '2006-01'
-stop = '2006-02'
+# start = '2006-01'
+# stop = '2006-02'
 
+start = '07'
+stop = '08'
+years = np.arange(2004, 2015)
 
 
 def rot2d(x, y, ang):
@@ -118,13 +121,22 @@ ax.text(0.6, 0.95, date, fontsize=18, color='0.2', transform=ax.transAxes,
 
 # Plot surface salinity
 # Note: skip ghost cells in x and y so that can properly plot grid cell boxes with pcolormesh
-salt = ds['salt'].loc[start:stop].isel(s_rho=-1, eta_rho=slice(1, -1), xi_rho=slice(1, -1)).data.mean(axis=0)
+salt = []
+for year in years:
+    salt.append(ds['salt'].loc[str(year) + '-' + start:str(year) + '-' + stop].isel(s_rho=-1, eta_rho=slice(1, -1), xi_rho=slice(1, -1)).data.mean(axis=0))
+salt = np.asarray(salt).mean(axis=0)
 # salt = np.squeeze(m.variables['salt'][itmodel,-1,1:-1,1:-1])
 mappable = ax.pcolormesh(grid.x_psi, grid.y_psi, salt, cmap=cmap, vmin=0, vmax=36)
 
 # Surface currents over domain, use psi grid for common locations
-u = ds['u'].loc[start:stop].isel(s_rho=-1).data.mean(axis=0)
-v = ds['v'].loc[start:stop].isel(s_rho=-1).data.mean(axis=0)
+u = []
+for year in years:
+    u.append(ds['u'].loc[str(year) + '-' + start:str(year) + '-' + stop].isel(s_rho=-1).data.mean(axis=0))
+u = np.asarray(u).mean(axis=0)
+v = []
+for year in years:
+    v.append(ds['v'].loc[str(year) + '-' + start:str(year) + '-' + stop].isel(s_rho=-1).data.mean(axis=0))
+v = np.asarray(v).mean(axis=0)
 u = op.resize(u, 0)
 v = op.resize(v, 1)
 anglev = ds['angle'].data
@@ -143,8 +155,14 @@ qk = ax.quiverkey(Q, 0.18, 0.75, 0.5, r'0.5 m$\cdot$s$^{-1}$ current', labelcolo
 #         color='k', alpha=0.3, scale=300, pivot='middle', headlength=3, headaxislength=2.8)
 # qk = ax.quiverkey(Q, 0.18, 0.845, 10, r'10 m$\cdot$s$^{-1}$ wind', labelcolor='0.2', fontproperties={'size': '10'})
 
-sustr = ds['sustr'].loc[start:stop].data.mean(axis=0)
-svstr = ds['svstr'].loc[start:stop].data.mean(axis=0)
+sustr = []
+for year in years:
+    sustr.append(ds['sustr'].loc[str(year) + '-' + start:str(year) + '-' + stop].data.mean(axis=0))
+sustr = np.asarray(sustr).mean(axis=0)
+svstr = []
+for year in years:
+    svstr.append(ds['svstr'].loc[str(year) + '-' + start:str(year) + '-' + stop].data.mean(axis=0))
+svstr = np.asarray(svstr).mean(axis=0)
 # sustr = w.variables['sustr'][itwind,:,:]
 # svstr = w.variables['svstr'][itwind,:,:]
 sustr, svstr = rot2d(op.resize(sustr,1)[1:-1,:], op.resize(svstr,0)[:,1:-1], anglev[1:-1, 1:-1])
