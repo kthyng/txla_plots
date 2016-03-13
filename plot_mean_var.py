@@ -40,10 +40,10 @@ mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 # start = '2006-01'
 # stop = '2006-02'
 
-start = '01'
-stop = '02'
+start = '07'  # '01'
+stop = '08'  # '02'
 years = np.arange(2004, 2015)
-name = 'Winter'
+name = 'Summer'  # 'Winter'
 
 
 def rot2d(x, y, ang):
@@ -189,6 +189,6 @@ cbtick = plt.getp(cb.ax.axes, 'yticklabels')
 plt.setp(cbtick, color='0.2')
 # pdb.set_trace()
 
-plt.savefig(figname)
+plt.savefig(figname, dpi=300)
 plt.close(fig)
 
