@@ -40,11 +40,19 @@ mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 # start = '2006-01'
 # stop = '2006-02'
 
-start = '07'  # '01'
-stop = '08'  # '02'
+start = '08'  # '07'  # '01'
+stop = '09'  # '08'  # '02'
 years = np.arange(2004, 2015)
-name = 'Summer'  # 'Winter'
+name = None  # 'Summer'  # 'Winter'
+var = 'speed'  # 'salt'
 
+
+if var == 'salt':
+    vmin = 0
+    vmax = 36
+elif var == 'speed':
+    vmin = -0.1
+    vmax = 0.1
 
 def rot2d(x, y, ang):
     '''rotate vectors by geometric angle'''
@@ -69,13 +77,16 @@ cdx = 7; cdy = 11 # in indices
 wdx = 25; wdy = 40 # in indices, wind arrows
 
 # Colormap for model output
-levels = (37-np.exp(np.linspace(0,np.log(37.), 10)))[::-1] # log for salinity, 0 to 36
-levels[0] = 0
-# levels = (37-np.exp(np.linspace(0,np.log(36.), 10)))[::-1]-1 # log for salinity, 0 to 35
-cmap = cmPong.salinity(cmocean.cm.salt, levels)
-# cmap = cmPong.salinity('YlGnBu_r', levels)
-ilevels = [0,1,2,3,4,5,8] # which levels to label
-ticks = [int(tick) for tick in levels[ilevels]] # plot ticks
+if var == 'salt':
+    levels = (37-np.exp(np.linspace(0,np.log(37.), 10)))[::-1] # log for salinity, 0 to 36
+    levels[0] = 0
+    # levels = (37-np.exp(np.linspace(0,np.log(36.), 10)))[::-1]-1 # log for salinity, 0 to 35
+    cmap = cmPong.salinity(cmocean.cm.salt, levels)
+    # cmap = cmPong.salinity('YlGnBu_r', levels)
+    ilevels = [0,1,2,3,4,5,8] # which levels to label
+    ticks = [int(tick) for tick in levels[ilevels]] # plot ticks
+elif var == 'speed':
+    cmap = cmocean.cm.speed
 ##
 
 dsgrid = xr.open_dataset('/home/kthyng/shelf/grid.nc')
@@ -84,9 +95,10 @@ proj = tracpy.tools.make_proj(setup='nwgom', usebasemap=True)
 grid = octant.grid.CGrid_geo(dsgrid['lon_vert'].data, dsgrid['lat_vert'].data, proj)
 
 
-
-# figname = 'figures/means/salt+vectors' + start + 'to' + stop + '.png'
-figname = 'figures/means/salt+vectors-' + name.lower() + '.png'
+if name is None:
+    figname = 'figures/means/vectors' + var + '-' + start + 'to' + stop + '.png'
+else:
+    figname = 'figures/means/vectors-' + var + '-' + name.lower() + '.png'
 
 # Set up plot
 fig = plt.figure(figsize=(10.1, 8.75), dpi=100)
@@ -118,22 +130,25 @@ if '01' in start:
     date = 'Winter'
 elif '07' in start:
     date = 'Summer'
+elif '08' in start:
+    date = 'August'
 ax.text(0.6, 0.95, date, fontsize=18, color='0.2', transform=ax.transAxes, 
             bbox=dict(facecolor='0.8', edgecolor='0.8', boxstyle='round'))
 
-calcsname = 'calcs/means/' + date + '.npz'
+calcsname = 'calcs/means/' + var + '-' + date + '.npz'
 
 if os.path.exists(calcsname):
     d = np.load(calcsname)
-    salt = d['salt']; u = d['u']; v = d['v']; sustr = d['sustr']; svstr = d['svstr']
+    salt = d[var]; u = d['u']; v = d['v']; sustr = d['sustr']; svstr = d['svstr']
 else:
-    # Plot surface salinity
-    # Note: skip ghost cells in x and y so that can properly plot grid cell boxes with pcolormesh
-    salt = []
-    for year in years:
-        salt.append(ds['salt'].loc[str(year) + '-' + start:str(year) + '-' + stop].isel(s_rho=-1, eta_rho=slice(1, -1), xi_rho=slice(1, -1)).data.mean(axis=0))
-    salt = np.asarray(salt).mean(axis=0)
-    # salt = np.squeeze(m.variables['salt'][itmodel,-1,1:-1,1:-1])
+    if var == 'salt':
+        # Plot surface salinity
+        # Note: skip ghost cells in x and y so that can properly plot grid cell boxes with pcolormesh
+        salt = []
+        for year in years:
+            salt.append(ds[var].loc[str(year) + '-' + start:str(year) + '-' + stop].isel(s_rho=-1, eta_rho=slice(1, -1), xi_rho=slice(1, -1)).data.mean(axis=0))
+        salt = np.asarray(salt).mean(axis=0)
+        # salt = np.squeeze(m.variables['salt'][itmodel,-1,1:-1,1:-1])
 
     # Surface currents over domain, use psi grid for common locations
     u = []
@@ -149,6 +164,9 @@ else:
     anglev = ds['angle'].data
     u, v = rot2d(u, v, op.resize(op.resize(anglev, 0), 1))
 
+    if var == 'speed':
+        salt = np.sqrt(u**2 + v**2)
+
     # wind stress
     sustr = []
     for year in years:
@@ -163,7 +181,7 @@ else:
     sustr, svstr = rot2d(op.resize(sustr,1)[1:-1,:], op.resize(svstr,0)[:,1:-1], anglev[1:-1, 1:-1])
     np.savez(calcsname, salt=salt, u=u, v=v, sustr=sustr, svstr=svstr)
 
-mappable = ax.pcolormesh(grid.x_psi, grid.y_psi, salt, cmap=cmap, vmin=0, vmax=36)
+mappable = ax.pcolormesh(grid.x_psi, grid.y_psi, salt, cmap=cmap, vmin=vmin, vmax=vmax)
 
 Q = ax.quiver(grid.x_psi[cdy::cdy,cdx::cdx], grid.y_psi[cdy::cdy,cdx::cdx], u[cdy::cdy,cdx::cdx], v[cdy::cdy,cdx::cdx], 
         color='k', alpha=0.4, pivot='middle', scale=40, width=0.001)
@@ -179,8 +197,9 @@ qk = ax.quiverkey(Q, 0.18, 0.81, 0.03, label=r'0.03 N m$^{2}$', labelcolor='0.2'
 cax = fig.add_axes([0.09, 0.9, 0.35, 0.025]) #colorbar axes
 cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')
 cb.set_label(r'Surface salinity [g$\cdot$kg$^{-1}$]', fontsize=14, color='0.2')
-cb.ax.tick_params(labelsize=14, length=2, color='0.2', labelcolor='0.2') 
-cb.set_ticks(ticks)
+cb.ax.tick_params(labelsize=14, length=2, color='0.2', labelcolor='0.2')
+if var == 'salt':
+    cb.set_ticks(ticks)
 # # box behind to hide lines
 # ax.add_patch( patches.Rectangle( (0.005, 0.925), 0.42, 0.0625, transform=ax.transAxes, color='0.8', zorder=3))    
 # ax.add_patch( patches.Rectangle( (0.1, 0.895), 0.24, 0.029, transform=ax.transAxes, color='0.8', zorder=3))    
