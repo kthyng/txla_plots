@@ -42,7 +42,7 @@ mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 start = '08'  # '07'  # '01'
 stop = '09'  # '08'  # '02'
-years = np.arange(2004, 2015)
+years = [2004]  # np.arange(2004, 2015)
 name = None  # 'Summer'  # 'Winter'
 var = 'speed'  # 'salt'
 
@@ -51,8 +51,8 @@ if var == 'salt':
     vmin = 0
     vmax = 36
 elif var == 'speed':
-    vmin = -0.1
-    vmax = 0.1
+    vmin = 0
+    vmax = 0.5
 
 def rot2d(x, y, ang):
     '''rotate vectors by geometric angle'''
@@ -96,7 +96,7 @@ grid = octant.grid.CGrid_geo(dsgrid['lon_vert'].data, dsgrid['lat_vert'].data, p
 
 
 if name is None:
-    figname = 'figures/means/vectors' + var + '-' + start + 'to' + stop + '.png'
+    figname = 'figures/means/vectors' + var + '-' + start + 'to' + stop + str(years[0]) + '.png'
 else:
     figname = 'figures/means/vectors-' + var + '-' + name.lower() + '.png'
 
@@ -135,11 +135,11 @@ elif '08' in start:
 ax.text(0.6, 0.95, date, fontsize=18, color='0.2', transform=ax.transAxes, 
             bbox=dict(facecolor='0.8', edgecolor='0.8', boxstyle='round'))
 
-calcsname = 'calcs/means/' + var + '-' + date + '.npz'
+calcsname = 'calcs/means/' + var + '-' + date + str(years[0]) + '.npz'
 
 if os.path.exists(calcsname):
     d = np.load(calcsname)
-    salt = d[var]; u = d['u']; v = d['v']; sustr = d['sustr']; svstr = d['svstr']
+    salt = d['salt']; u = d['u']; v = d['v']; sustr = d['sustr']; svstr = d['svstr']
 else:
     if var == 'salt':
         # Plot surface salinity
