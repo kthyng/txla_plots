@@ -6,3 +6,7 @@
 figures/eval*
 figures/gallery*
 figures/lightness*
+*.png
+.ipynb_checkpoints
+figures
+calcs

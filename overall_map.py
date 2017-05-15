@@ -19,7 +19,7 @@ dogulf = False
 
 llcrnrlon=-(108); llcrnrlat=16; 
 urcrnrlon=-(74); urcrnrlat=44; projection='lcc'
-lat_0=25.; lon_0=-89; resolution='f'; area_thresh=0.
+lat_0=25.; lon_0=-89; resolution='i'; area_thresh=0.
 basemap_gulf = Basemap(llcrnrlon=llcrnrlon,
              llcrnrlat=llcrnrlat,
              urcrnrlon=urcrnrlon,
@@ -97,17 +97,17 @@ if dogulf:
 if doshelf:
     # Shelf grid
     dx = 1; dy = 1;
-    ax_gulf.plot(xr2_shelf[::dx], yr2_shelf[::dy], \
-                xr2_shelf[::dx].T, yr2_shelf[::dy].T, color='darkcyan',alpha=.1)
+    # ax_gulf.plot(xr2_shelf[::dx], yr2_shelf[::dy], \
+    #             xr2_shelf[::dx].T, yr2_shelf[::dy].T, color='darkcyan',alpha=.1)
 
 if dobay:
     # Plot Galveston grid
     grd.plotmesh(ax=ax_gulf, edgecolors=('grey',), facecolors=('None',), zorder=9)
 
-if dogulf:
+# if dogulf:
     # "Gulf"
-    plt.text(0.5, 0.07, 'Gulf', transform = ax_gulf.transAxes, 
-            axes=ax_gulf, fontsize=16, color='k', alpha=0.8)
+    # plt.text(0.5, 0.07, 'Gulf', transform = ax_gulf.transAxes, 
+    #         axes=ax_gulf, fontsize=16, color='k', alpha=0.8)
 
 
 if doshelf:
@@ -133,13 +133,13 @@ if dogulf:
 if doshelf:
     # Shelf grid
     dx = 1; dy = 1;
-    ax_shelf.plot(xr2_shelf[::dx], yr2_shelf[::dy], xr2_shelf[::dx].T, yr2_shelf[::dy].T, 'darkcyan',alpha=.2)
+    # ax_shelf.plot(xr2_shelf[::dx], yr2_shelf[::dy], xr2_shelf[::dx].T, yr2_shelf[::dy].T, 'darkcyan',alpha=.2)
 
     # Add isobaths to shelf area
     h = g_shelf.variables['h'][:]
-    hs = [20, 50, 100, 500]
-    cs = ax_shelf.contour(xr2_shelf, yr2_shelf, h, hs, colors='0.1', lw=3)
-    ax_shelf.clabel(cs, manual=True, fmt='%2.0f', fontsize=8)
+    hs = [20, 50, 100, 500, 1000, 2000, 3000, 4000]
+    # cs = ax_shelf.contour(xr2_shelf, yr2_shelf, h, hs, colors='0.1', lw=3)
+    # ax_shelf.clabel(cs, manual=True, fmt='%2.0f', fontsize=8)
 
     # sub region of the original image
     x1, x2, y1, y2 = 1080000, 2216090, 630000, 1530000
@@ -161,10 +161,10 @@ if dobay:
     #   ax_shelf.plot(points[simplex,0], points[simplex,1], color='darkgrey')
     grd.plotmesh(ax=ax_shelf, edgecolors=('grey',), facecolors=('None',), zorder=0)
 
-if doshelf and dobay and dogulf:
+# if doshelf and dobay and dogulf:
     # "Shelf"
-    plt.text(0.35, 0.05, 'Shelf', transform = ax_shelf.transAxes, 
-            axes=ax_shelf, fontsize=16, color='darkcyan')
+    # plt.text(0.35, 0.05, 'Shelf', transform = ax_shelf.transAxes, 
+    #         axes=ax_shelf, fontsize=16, color='darkcyan')
 
 
 
@@ -183,32 +183,32 @@ if dobay:
 
 if doshelf:
     ### Galveston just area not bay grid
-    if not dobay:
-        ax_bay = zoomed_inset_axes(ax_gulf, 13, loc=1) # zoom = 6
-        basemap_gulf.drawcoastlines(ax=ax_bay)
-        basemap_gulf.fillcontinents('0.8',ax=ax_bay)
-        basemap_gulf.drawstates()
-        basemap_gulf.drawcountries()
-        # sub region of the original image
-        x1, x2, y1, y2 = 1430000, 1525000, 1300000, 1410000
-        ax_bay.set_xlim(x1, x2)
-        ax_bay.set_ylim(y1, y2)
-        plt.xticks(visible=False)
-        plt.yticks(visible=False)
-        # draw a bbox of the region of the inset axes in the parent axes and
-        # connecting lines between the bbox and the inset axes area
-        mark_inset(ax_gulf, ax_bay, loc1=2, loc2=4, fc="none", ec="grey", 
-                    linewidth=2, zorder=9)
+    # if not dobay:
+    #     ax_bay = zoomed_inset_axes(ax_gulf, 13, loc=1) # zoom = 6
+    #     basemap_gulf.drawcoastlines(ax=ax_bay)
+    #     basemap_gulf.fillcontinents('0.8',ax=ax_bay)
+    #     basemap_gulf.drawstates()
+    #     basemap_gulf.drawcountries()
+    #     # sub region of the original image
+    #     x1, x2, y1, y2 = 1430000, 1525000, 1300000, 1410000
+    #     ax_bay.set_xlim(x1, x2)
+    #     ax_bay.set_ylim(y1, y2)
+    #     plt.xticks(visible=False)
+    #     plt.yticks(visible=False)
+    #     # draw a bbox of the region of the inset axes in the parent axes and
+    #     # connecting lines between the bbox and the inset axes area
+    #     mark_inset(ax_gulf, ax_bay, loc1=2, loc2=4, fc="none", ec="grey", 
+    #                 linewidth=2, zorder=9)
 
     # Shelf grid in background of zoom in
     dx = 1; dy = 1;
-    ax_bay.plot(xr2_shelf[::dy], yr2_shelf[::dx], xr2_shelf[::dy].T, yr2_shelf[::dx].T, 
-        color='darkcyan',alpha=.5, linewidth=.5, zorder=5)
+    # ax_bay.plot(xr2_shelf[::dy], yr2_shelf[::dx], xr2_shelf[::dy].T, yr2_shelf[::dx].T, 
+    #     color='darkcyan',alpha=.5, linewidth=.5, zorder=5)
 
     # Little patch of shelf grid
-    ax_bay.plot(xr2_shelf[130:145:dy,265:275:dx], yr2_shelf[130:145:dy,265:275:dx], 
-                xr2_shelf[130:145:dy,265:275:dx].T, yr2_shelf[130:145:dy,265:275:dx].T, 
-                color='darkcyan', linewidth=1, zorder=5)
+    # ax_bay.plot(xr2_shelf[130:145:dy,265:275:dx], yr2_shelf[130:145:dy,265:275:dx], 
+    #             xr2_shelf[130:145:dy,265:275:dx].T, yr2_shelf[130:145:dy,265:275:dx].T, 
+    #             color='darkcyan', linewidth=1, zorder=5)
     # ax_bay.plot(xr2_shelf[120:128:dy,285:292:dx], yr2_shelf[120:128:dy,285:292:dx], 
     #             xr2_shelf[120:128:dy,285:292:dx].T, yr2_shelf[120:128:dy,285:292:dx].T, 
     #             color='darkcyan', linewidth=1, zorder=5)
@@ -240,4 +240,4 @@ if dobay:
             axes=ax_bay, fontsize=16, color='grey')
 
 
-plt.savefig('figures/' + fname + '.png', bbox_inches='tight')
+plt.savefig('figures/' + fname + 'LTER.png', bbox_inches='tight')
