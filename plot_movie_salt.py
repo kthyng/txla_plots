@@ -102,7 +102,7 @@ wdx = 25; wdy = 40 # wind, in indices
 hlevs = [10, 20, 50, 100, 150, 200, 250, 300, 350, 400, 450]  # isobath contour depths
 
 # Grid info
-loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg'
+loc = 'http://copano.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg'
 m = xr.open_dataset(loc)
 
 # Rename for convenience
