@@ -1,5 +1,5 @@
 '''
-Make salinity plots for movies of the full domain.
+Make speed plots for movies of the full domain.
 
 To be run in Python 3.
 '''
@@ -59,7 +59,7 @@ wdx = 25; wdy = 40 # wind, in indices
 hlevs = [10, 20, 50, 100, 150, 200, 250, 300, 350, 400, 450]  # isobath contour depths
 
 # Grid info
-loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg'
+loc = 'http://copano.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg'
 m = xr.open_dataset(loc)
 
 # Rename for convenience
@@ -191,9 +191,9 @@ for year in years:
         qk = ax.quiverkey(Q, 0.15, 0.84, 10, r'10 m$\cdot$s$^{-1}$ wind', labelcolor='0.2', fontproperties={'size': '10'})
 
         # Colorbar in upper left corner
-        cax = fig.add_axes([0.07, 0.92, 0.32, 0.018]) #colorbar axes
-        cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')
-        cb.set_label(r'Surface salinity [g$\cdot$kg$^{-1}$]          ', fontsize=13, color='0.2')
+        cax = fig.add_axes([0.085, 0.92, 0.32, 0.018]) #colorbar axes
+        cb = fig.colorbar(mappable, cax=cax, orientation='horizontal', extend='max')
+        cb.set_label(r'Surface speed [ms$^{-1}$]              ', fontsize=13, color='0.2')
         cb.ax.tick_params(labelsize=12, length=2, color='0.2', labelcolor='0.2')
         cb.set_ticks(ticks)
         # change colorbar tick color http://stackoverflow.com/questions/9662995/matplotlib-change-title-and-colorbar-text-and-tick-colors
