@@ -5,6 +5,7 @@ To be run in Python 3.
 '''
 
 import matplotlib as mpl
+mpl.use("Agg") # set matplotlib to use the backend that does not require a windowing system
 import numpy as np
 import os
 import xarray as xr
@@ -75,6 +76,8 @@ cmin = -0.3; cmax = 0.3; dc = 0.1
 ticks = np.arange(cmin, cmax+dc, dc)
 ##
 
+var = 'ssh'
+
 land_10m = cfeature.NaturalEarthFeature('physical', 'land', '10m',
                                         edgecolor='face',
                                         facecolor=cfeature.COLORS['land'])
@@ -93,7 +96,7 @@ rds = xr.auto_combine(ds)  # all output here
 # take 2/3 of total river inflow as mississippi river discharge
 r = (np.abs(rds['river_transport']).sum(axis=1)*2.0/3.0).to_pandas()
 
-
+base = 'figures/' + var + '/movies/'
 years = np.arange(1993, 2017)
 
 for year in years:
@@ -107,7 +110,7 @@ for year in years:
     # Loop through times that simulations were started
     for plotdate in plotdates:
 
-        figname = 'figures/ssh/movies/' + pd.to_datetime(plotdate.data).isoformat()[0:13] + '.png'
+        figname = base + pd.to_datetime(plotdate.data).isoformat()[0:13] + '.png'
 
         # Don't redo plot
         if os.path.exists(figname):
@@ -203,4 +206,9 @@ for year in years:
         plt.savefig(figname)
         plt.close(fig)
 
-# To make movie: ffmpeg -r 10 -pattern_type glob -i '2008-*.png' -c:v libx264 -pix_fmt yuv420p -crf 15 movie.mp4
+# low resolution animation
+command = 'ffmpeg -r 15 -pattern_type glob -i "' + base + str(year) + '-*.png" -c:v libx264 -pix_fmt yuv420p -crf 30 ' + base + str(year) + '_low.mp4'
+os.system(command)
+# high resolution animation
+command = 'ffmpeg -r 15 -pattern_type glob -i "' + base + str(year) + '-*.png" -c:v libx264 -pix_fmt yuv420p -crf 20 ' + base + str(year) + '_high.mp4'
+os.system(command)
