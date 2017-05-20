@@ -213,9 +213,11 @@ for year in years:
         plt.savefig(figname)
         plt.close(fig)
 
-# low resolution animation
-command = 'ffmpeg -r 15 -pattern_type glob -i "' + base + str(year) + '-*.png" -c:v libx264 -pix_fmt yuv420p -crf 30 ' + base + str(year) + '_low.mp4'
-os.system(command)
-# high resolution animation
-command = 'ffmpeg -r 15 -pattern_type glob -i "' + base + str(year) + '-*.png" -c:v libx264 -pix_fmt yuv420p -crf 20 ' + base + str(year) + '_high.mp4'
-os.system(command)
+    if not os.path.exists(base + str(year) + '_low.mp4'):
+        # low resolution animation
+        command = 'ffmpeg -r 15 -pattern_type glob -i "' + base + str(year) + '-*.png" -c:v libx264 -pix_fmt yuv420p -crf 30 ' + base + str(year) + '_low.mp4'
+        os.system(command)
+    if not os.path.exists(base + str(year) + '_high.mp4'):
+        # high resolution animation
+        command = 'ffmpeg -r 15 -pattern_type glob -i "' + base + str(year) + '-*.png" -c:v libx264 -pix_fmt yuv420p -crf 20 ' + base + str(year) + '_high.mp4'
+        os.system(command)
