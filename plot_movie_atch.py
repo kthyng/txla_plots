@@ -1,5 +1,5 @@
 '''
-Make Brazos river dye plots for movies of the full domain.
+Make Mississippi river dye plots for movies of the full domain.
 
 To be run in Python 3.
 '''
@@ -69,13 +69,13 @@ lat_rho = m['lat_rho'][:].data
 anglev = m.variables['angle'][:].data  # theta to rotate wind vectors
 
 # Colormap for model output
-cmap = cmo.amp
-cmin = 0.01; cmax = 5; dc = 10
-# ticks = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]  # np.arange(cmin, cmax+dc, dc)
-# ticklabels = ['10', '20', '30', '40', '50', '', '70', '', '', '100']
+cmap = cmo.tempo
+cmin = 0.1; cmax = 100; dc = 10
+# ticks = [0.1, 1, 10, 100]  # np.arange(cmin, cmax+dc, dc)
+# ticklabels = ['0.1', '1', '10', '100']
 
-varname = 'dye_04'
-label = r'Brazos river dye [% river water]'
+varname = 'dye_03'
+label = r'Atchafalaya river dye [% river water]'
 factor = 100  # to change to percentage
 
 os.makedirs('figures/%s/movies' % varname, exist_ok=True)
@@ -88,7 +88,9 @@ states_provinces = cfeature.NaturalEarthFeature(
     name='admin_1_states_provinces_lines',
     scale='10m',
     facecolor='none')
-river = cfeature.NaturalEarthFeature('physical', 'rivers_lake_centerlines', '10m')
+river = cfeature.NaturalEarthFeature('physical', 'rivers_lake_centerlines', '10m',
+                                        edgecolor='b',
+                                        facecolor='none')
 rivermore = cfeature.NaturalEarthFeature('physical', 'rivers_north_america', '10m')
 
 ## River forcing ##
@@ -211,7 +213,7 @@ for year in years:
         cb.set_label(label, fontsize=13, color='0.2')
         cb.ax.tick_params(labelsize=12, length=2, color='0.2', labelcolor='0.2')
         # cb.set_ticks(ticks)
-        # cb.ax.set_xticklabels(ticklabels)  # horizontal colorbar
+        # cb.ax.set_yticklabels(ticklabels)  # horizontal colorbar
         # change colorbar tick color http://stackoverflow.com/questions/9662995/matplotlib-change-title-and-colorbar-text-and-tick-colors
         cbtick = plt.getp(cb.ax.axes, 'yticklabels')
         plt.setp(cbtick, color='0.2')
