@@ -22,7 +22,6 @@ import pandas as pd
 from matplotlib import cm, colors
 mpl.rcParams.update({'font.size': 12})
 
-
 def rot2d(x, y, ang):
     '''rotate vectors by geometric angle'''
     xr = x*np.cos(ang) - y*np.sin(ang)
@@ -59,7 +58,7 @@ wdx = 25; wdy = 40 # wind, in indices
 hlevs = [10, 20, 50, 100, 150, 200, 250, 300, 350, 400, 450]  # isobath contour depths
 
 # Grid info
-loc = 'http://copano.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg'
+loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg'
 m = xr.open_dataset(loc)
 
 # Rename for convenience
@@ -71,10 +70,15 @@ anglev = m.variables['angle'][:].data  # theta to rotate wind vectors
 
 # Colormap for model output
 cmap = cmo.matter
-cmin = 10; cmax = 35; dc = 5
-ticks = np.arange(cmin, cmax+dc, dc)
+cmin = 10; cmax = 50; dc = 10
+ticks = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]  # np.arange(cmin, cmax+dc, dc)
+ticklabels = ['10', '20', '30', '40', '50', '', '70', '', '', '100']
 
-var = 'dye_04'
+varname = 'dye_04'
+label = r'Brazos river dye [% river water]'
+factor = 100  # to change to percentage
+
+os.makedirs('figures/%s/movies' % varname, exist_ok=True)
 
 land_10m = cfeature.NaturalEarthFeature('physical', 'land', '10m',
                                         edgecolor='face',
@@ -94,8 +98,8 @@ rds = xr.auto_combine(ds)  # all output here
 # take 2/3 of total river inflow as mississippi river discharge
 r = (np.abs(rds['river_transport']).sum(axis=1)*2.0/3.0).to_pandas()
 
-base = 'figures/' + var + '/movies/'
-years = np.arange(1993, 2017)
+base = 'figures/' + varname + '/movies/'
+years = np.arange(1994, 2017)
 
 for year in years:
 
@@ -140,8 +144,11 @@ for year in years:
 
         # Plot variable
         # Note: skip ghost cells in x and y so that can properly plot grid cell boxes with pcolormesh
-        var = m.temp.sel(ocean_time=plotdate).isel(s_rho=-1, eta_rho=slice(1,-1), xi_rho=slice(1,-1))
-        mappable = ax.pcolormesh(lon_psi, lat_psi, var, cmap=cmap, vmin=cmin, vmax=cmax, transform=ccrs.PlateCarree())
+        var = m[varname].sel(ocean_time=plotdate).isel(s_rho=-1, eta_rho=slice(1,-1), xi_rho=slice(1,-1))
+        mappable = ax.pcolormesh(lon_psi, lat_psi, var*factor, cmap=cmap,
+                                 vmin=cmin, vmax=cmax,
+                                 transform=ccrs.PlateCarree(),
+                                 norm=colors.LogNorm(vmin=cmin, vmax=cmax))
         ax.add_feature(land_10m, facecolor='0.8')
         ax.coastlines(resolution='10m')  # coastline resolution options are '110m', '50m', '10m'
         ax.add_feature(states_provinces, edgecolor='0.2')
@@ -189,16 +196,18 @@ for year in years:
         Uwind = m.Uwind.sel(ocean_time=plotdate).data
         Vwind = m.Vwind.sel(ocean_time=plotdate).data
         Uwind, Vwind = rot2d(Uwind, Vwind, anglev)
-        Q = ax.quiver(lon_rho[wdy/2::wdy,wdx::wdx], lat_rho[wdy/2::wdy,wdx::wdx], Uwind[wdy/2::wdy,wdx::wdx], Vwind[wdy/2::wdy,wdx::wdx],
+        wdy2 = int(wdy/2)
+        Q = ax.quiver(lon_rho[wdy2::wdy,wdx::wdx], lat_rho[wdy2::wdy,wdx::wdx], Uwind[wdy2::wdy,wdx::wdx], Vwind[wdy2::wdy,wdx::wdx],
                 color='k', alpha=0.3, scale=300, pivot='middle', headlength=3, headaxislength=2.8, transform=ccrs.PlateCarree())
         qk = ax.quiverkey(Q, 0.11, 0.84, 10, r'10 m$\cdot$s$^{-1}$ wind', labelcolor='0.2', fontproperties={'size': '10'})
 
         # Colorbar in upper left corner
         cax = fig.add_axes([0.08, 0.92, 0.32, 0.018]) #colorbar axes
         cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')
-        cb.set_label(r'Surface temperature [$\!^\circ\!$C]               ', fontsize=13, color='0.2')
+        cb.set_label(label, fontsize=13, color='0.2')
         cb.ax.tick_params(labelsize=12, length=2, color='0.2', labelcolor='0.2')
         cb.set_ticks(ticks)
+        cb.ax.set_xticklabels(ticklabels)  # horizontal colorbar
         # change colorbar tick color http://stackoverflow.com/questions/9662995/matplotlib-change-title-and-colorbar-text-and-tick-colors
         cbtick = plt.getp(cb.ax.axes, 'yticklabels')
         plt.setp(cbtick, color='0.2')
