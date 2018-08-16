@@ -94,10 +94,18 @@ river = cfeature.NaturalEarthFeature('physical', 'rivers_lake_centerlines', '10m
 rivermore = cfeature.NaturalEarthFeature('physical', 'rivers_north_america', '10m')
 
 ## River forcing ##
-Files = sorted(glob('/copano/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
-ds = [xr.open_dataset(File) for File in Files]
-# need to drop extra variable from 2016:
-ds[-1] = ds[-1].drop('river_flag')
+try:
+    Files = sorted(glob('/copano/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
+    ds = [xr.open_dataset(File) for File in Files]
+    # need to drop extra variable from 2016:
+    ds[-1] = ds[-1].drop('river_flag')
+except:
+    # in case I am running on rainier with expandrive
+    Files = sorted(glob('/Volumes/copano.tamu.edu/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
+    Files.pop(-1)  # have to remove 2016 because the file isn't working
+    ds = [xr.open_dataset(File) for File in Files]
+    # # need to drop extra variable from 2016:
+    # ds[-1] = ds[-1].drop('river_flag')
 rds = xr.auto_combine(ds)  # all output here
 # take 2/3 of total river inflow as mississippi river discharge
 r = (np.abs(rds['river_transport']).sum(axis=1)*2.0/3.0).to_pandas()
@@ -139,7 +147,7 @@ for year in years:
         ax.contour(lon_rho, lat_rho, m.h, hlevs, colors='0.6', transform=ccrs.PlateCarree(), linewidths=0.5)
 
         # Date
-        datestr = pd.to_datetime(plotdate.data).strftime('%Y %b %02d %H:%M')
+        datestr = pd.to_datetime(plotdate.data).strftime('%Y %b %d %H:%M')
         ax.text(0.35, 0.425, datestr, fontsize=18, color='0.2', transform=ax.transAxes,
                     bbox=dict(facecolor='white', edgecolor='white', boxstyle='round'))
 
