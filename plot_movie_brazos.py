@@ -86,7 +86,10 @@ states_provinces = cfeature.NaturalEarthFeature(
     facecolor='none')
 
 ## River forcing ##
-Files = sorted(glob('/copano/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
+try:
+    Files = sorted(glob('/copano/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
+except:
+    Files = sorted(glob('/Volumes/copano/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
 ds = [xr.open_dataset(File) for File in Files]
 # need to drop extra variable from 2016:
 ds[-1] = ds[-1].drop('river_flag')
