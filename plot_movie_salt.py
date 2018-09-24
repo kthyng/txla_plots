@@ -103,8 +103,15 @@ wdx = 25; wdy = 40 # wind, in indices
 hlevs = [10, 20, 50, 100, 150, 200, 250, 300, 350, 400, 450]  # isobath contour depths
 
 # Grid info
-loc = 'http://copano.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg'
-m = xr.open_dataset(loc)
+locs = ['http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg',
+        'http://copano.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg',
+        'http://terrebonne.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg']
+for iloc, loc in enumerate(locs):
+    try:
+        m = xr.open_dataset(loc)
+        break  # if this works, exit loop; iloc notes location in locs
+    except:
+        continue
 
 # Rename for convenience
 lon_psi = m['lon_psi'][:].data
@@ -133,16 +140,23 @@ states_provinces = cfeature.NaturalEarthFeature(
     facecolor='none')
 
 ## River forcing ##
-Files = sorted(glob('/copano/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
-ds = [xr.open_dataset(File) for File in Files]
-# need to drop extra variable from 2016:
-ds[-1] = ds[-1].drop('river_flag')
+try:
+    Files = sorted(glob('/copano/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
+    ds = [xr.open_dataset(File) for File in Files]
+    # need to drop extra variable from 2016:
+    ds[-1] = ds[-1].drop('river_flag')
+except:
+    # in case I am running on rainier with expandrive
+    Files = sorted(glob('/Volumes/copano.tamu.edu/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
+    Files.pop(-1)  # have to remove 2016 because the file isn't working
+    ds = [xr.open_dataset(File) for File in Files]
+    # # need to drop extra variable from 2016:
+    # ds[-1] = ds[-1].drop('river_flag')
 rds = xr.auto_combine(ds)  # all output here
 # take 2/3 of total river inflow as mississippi river discharge
 r = (np.abs(rds['river_transport']).sum(axis=1)*2.0/3.0).to_pandas()
-
 base = 'figures/' + var + '/movies/'
-years = np.arange(1993, 2017)
+years = np.arange(2017, 2018)
 
 for year in years:
 
@@ -185,7 +199,7 @@ for year in years:
         # ax.text(0.9, 0.803, '450', transform=ax.transAxes, fontsize=9, color='0.4', rotation=45)
 
         # Date
-        datestr = pd.to_datetime(plotdate.data).strftime('%Y %b %02d %H:%M')
+        datestr = pd.to_datetime(plotdate.data).strftime('%Y %b %d %H:%M')
         ax.text(0.35, 0.425, datestr, fontsize=18, color='0.2', transform=ax.transAxes,
                     bbox=dict(facecolor='white', edgecolor='white', boxstyle='round'))
 
@@ -194,7 +208,16 @@ for year in years:
 
         # Plot surface salinity
         # Note: skip ghost cells in x and y so that can properly plot grid cell boxes with pcolormesh
-        salt = m.salt.sel(ocean_time=plotdate).isel(s_rho=-1, eta_rho=slice(1,-1), xi_rho=slice(1,-1))
+        # make sure netcdf still working
+        try:
+            salt = m.salt.sel(ocean_time=plotdate).isel(s_rho=-1, eta_rho=slice(1,-1), xi_rho=slice(1,-1))
+        except:  # try next loc
+            if iloc == len(locs)-1:  # restart loop if at end
+                ilocnext = 0
+            else:
+                ilocnext = iloc+1
+            m = xr.open_dataset(locs[ilocnext])
+            salt = m.salt.sel(ocean_time=plotdate).isel(s_rho=-1, eta_rho=slice(1,-1), xi_rho=slice(1,-1))
         mappable = ax.pcolormesh(lon_psi, lat_psi, salt, cmap=cmap, vmin=0, vmax=36, transform=ccrs.PlateCarree())
         ax.add_feature(land_10m, facecolor='0.8')
         ax.coastlines(resolution='10m')  # coastline resolution options are '110m', '50m', '10m'
