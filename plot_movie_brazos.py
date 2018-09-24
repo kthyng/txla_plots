@@ -58,8 +58,12 @@ wdx = 25; wdy = 40 # wind, in indices
 hlevs = [10, 20, 50, 100, 150, 200, 250, 300, 350, 400, 450]  # isobath contour depths
 
 # Grid info
-loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg'
-m = xr.open_dataset(loc)
+try:
+    loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg'
+    m = xr.open_dataset(loc)
+except:
+    loc = 'http://copano.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg'
+    m = xr.open_dataset(loc)
 
 # Rename for convenience
 lon_psi = m['lon_psi'][:].data
@@ -100,7 +104,7 @@ try:
 except:
     # in case I am running on rainier with expandrive
     Files = sorted(glob('/Volumes/copano.tamu.edu/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
-    Files.pop(-1)  # have to remove 2016 because the file isn't working
+    # Files.pop(-1)  # have to remove 2016 because the file isn't working
     ds = [xr.open_dataset(File) for File in Files]
     # # need to drop extra variable from 2016:
     # ds[-1] = ds[-1].drop('river_flag')
@@ -109,13 +113,12 @@ rds = xr.auto_combine(ds)  # all output here
 r = (np.abs(rds['river_transport']).sum(axis=1)*2.0/3.0).to_pandas()
 
 base = 'figures/' + varname + '/movies/'
-years = np.arange(1994, 2017)
+years = np.arange(1993, 2018)
 
 for year in years:
 
     # Time period to use
     plotdates = m['ocean_time'].sel(ocean_time=str(year))
-
     mticknames = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
     iticks = [datetime(year, month, 2, 0, 0) for month in np.arange(1,13)]
 
