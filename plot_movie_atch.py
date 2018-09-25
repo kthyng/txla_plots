@@ -181,14 +181,14 @@ for year in years:
         # Plot variable
         # Note: skip ghost cells in x and y so that can properly plot grid cell boxes with pcolormesh
         try:
-            var = m[varname].sel(ocean_time=plotdate).isel(s_rho=-1, eta_rho=slice(1,-1), xi_rho=slice(1,-1))
+            var = m[varname].sel(ocean_time=plotdate).isel(s_rho=-1, eta_rho=slice(1,-1), xi_rho=slice(1,-1)).values
         except:  # try next loc
             if iloc == len(locs)-1:  # restart loop if at end
                 ilocnext = 0
             else:
                 ilocnext = iloc+1
             m = xr.open_dataset(locs[ilocnext])
-            var = m[varname].sel(ocean_time=plotdate).isel(s_rho=-1, eta_rho=slice(1,-1), xi_rho=slice(1,-1))
+            var = m[varname].sel(ocean_time=plotdate).isel(s_rho=-1, eta_rho=slice(1,-1), xi_rho=slice(1,-1)).values
         mappable = ax.pcolormesh(lon_psi, lat_psi, var*factor, cmap=cmap,
                                  vmin=cmin, vmax=cmax,
                                  transform=ccrs.PlateCarree(),
