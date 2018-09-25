@@ -140,32 +140,52 @@ states_provinces = cfeature.NaturalEarthFeature(
     facecolor='none')
 
 ## River forcing ##
-try:
-    Files = sorted(glob('/copano/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
-    ds = [xr.open_dataset(File) for File in Files]
-    # need to drop extra variable from 2016:
-    ds[-1] = ds[-1].drop('river_flag')
-except:
-    # in case I am running on rainier with expandrive
-    Files = sorted(glob('/Volumes/copano.tamu.edu/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
-    Files.pop(-1)  # have to remove 2016 because the file isn't working
-    ds = [xr.open_dataset(File) for File in Files]
-    # # need to drop extra variable from 2016:
-    # ds[-1] = ds[-1].drop('river_flag')
-rds = xr.auto_combine(ds)  # all output here
-# take 2/3 of total river inflow as mississippi river discharge
-r = (np.abs(rds['river_transport']).sum(axis=1)*2.0/3.0).to_pandas()
+# try:
+#     Files = sorted(glob('/copano/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
+#     ds = [xr.open_dataset(File) for File in Files]
+#     # need to drop extra variable from 2016:
+#     ds[-1] = ds[-1].drop('river_flag')
+# except:
+#     # in case I am running on rainier with expandrive
+#     Files = sorted(glob('/Volumes/copano.tamu.edu/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
+#     Files.pop(-1)  # have to remove 2016 because the file isn't working
+#     ds = [xr.open_dataset(File) for File in Files]
+#     # # need to drop extra variable from 2016:
+#     # ds[-1] = ds[-1].drop('river_flag')
+# rds = xr.auto_combine(ds)  # all output here
+# # take 2/3 of total river inflow as mississippi river discharge
+# r = (np.abs(rds['river_transport']).sum(axis=1)*2.0/3.0).to_pandas()
+
 base = 'figures/' + var + '/movies/'
+os.makedirs(base, exist_ok=True)
 years = np.arange(2017, 2018)
 
 for year in years:
 
     # Time period to use
     plotdates = m['ocean_time'].sel(ocean_time=str(year))
-
     mticknames = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
     iticks = [datetime(year, month, 2, 0, 0) for month in np.arange(1,13)]
 
+    # river forcing - use file for this year
+    try:
+        File = '/copano/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_%s_AR_newT_SWpass_weekly.nc' % year
+        ds = xr.open_dataset(File)
+        # need to drop extra variable from 2016:
+        ds[-1] = ds[-1].drop('river_flag')
+    except:
+        # in case I am running on rainier with expandrive
+        # have copies locally
+        File = 'rivers/txla2_river_%s_AR_newT_SWpass_weekly.nc' % year
+        ds = xr.open_dataset(File)
+        # # this doesn't work anymore for 2016, 2017:
+        # File = '/Volumes/copano.tamu.edu/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_%s_AR_newT_SWpass_weekly.nc' % year
+        # ds = xr.open_dataset(File)
+    # for each year, remove any time steps outside the present year
+    # ds = [ds[i].sel(river_time=str(year)) for i, year in enumerate(yearsrivers)]
+    # rds = xr.auto_combine(ds)  # all output here
+    # take 2/3 of total river inflow as mississippi river discharge
+    r = (np.abs(ds['river_transport']).sum(axis=1)*2.0/3.0).to_pandas()
 
     # Loop through times that simulation output is available
     for plotdate in plotdates:
@@ -210,14 +230,14 @@ for year in years:
         # Note: skip ghost cells in x and y so that can properly plot grid cell boxes with pcolormesh
         # make sure netcdf still working
         try:
-            salt = m.salt.sel(ocean_time=plotdate).isel(s_rho=-1, eta_rho=slice(1,-1), xi_rho=slice(1,-1))
+            salt = m.salt.sel(ocean_time=plotdate).isel(s_rho=-1, eta_rho=slice(1,-1), xi_rho=slice(1,-1)).values
         except:  # try next loc
             if iloc == len(locs)-1:  # restart loop if at end
                 ilocnext = 0
             else:
                 ilocnext = iloc+1
             m = xr.open_dataset(locs[ilocnext])
-            salt = m.salt.sel(ocean_time=plotdate).isel(s_rho=-1, eta_rho=slice(1,-1), xi_rho=slice(1,-1))
+            salt = m.salt.sel(ocean_time=plotdate).isel(s_rho=-1, eta_rho=slice(1,-1), xi_rho=slice(1,-1)).values
         mappable = ax.pcolormesh(lon_psi, lat_psi, salt, cmap=cmap, vmin=0, vmax=36, transform=ccrs.PlateCarree())
         ax.add_feature(land_10m, facecolor='0.8')
         ax.coastlines(resolution='10m')  # coastline resolution options are '110m', '50m', '10m'
@@ -231,7 +251,10 @@ for year in years:
             axr.spines[axis].set_linewidth(0.05)
         axr.spines['bottom'].set_linewidth(0.0)
         # the plot itself
-        axr.fill_between(r[str(year)+'-1-1':datestr].index, r[str(year)+'-1-1':datestr], facecolor='0.4', edgecolor='0.4', zorder=2, alpha=0.5)  # plot up to now
+        try:
+            axr.fill_between(r[str(year)+'-1-1':datestr].index, r[str(year)+'-1-1':datestr], facecolor='0.4', edgecolor='0.4', zorder=2, alpha=0.5)  # plot up to now
+        except:  # timing might work out so first time step doesn't work
+            pass
         axr.plot(r[str(year)].index, r[str(year)], '-', color='0.4', alpha=0.3)  # plot whole year
         axr.plot(r[str(year)+'-1-1':datestr].index, r[str(year)+'-1-1':datestr], '-', color='0.4')  # plot up to now
         # horizontal grid lines
@@ -243,11 +266,12 @@ for year in years:
         axr.autoscale(axis='x', tight=True)
         axr.set_ylim(-1000,45000)
         # labels
-        axr.text(r[str(year)+'-10-15'].index, 5, '0', fontsize=9, color='0.4', alpha=0.7)
-        axr.text(r[str(year)+'-10-15'].index, 10000, '10', fontsize=9, color='0.4', alpha=0.7)
-        axr.text(r[str(year)+'-10-15'].index, 20000, '20', fontsize=9, color='0.4', alpha=0.7)
-        axr.text(r[str(year)+'-10-15'].index, 30000, r'30$\times$10$^3$ m$^3$s$^{-1}$', fontsize=9, color='0.4', alpha=0.7)
-        axr.text(r[str(year)+'-6-15'].index, 30000, 'Mississippi discharge', fontsize=9, color='0.4', alpha=0.7)
+        # index 288 is october 15th; index 166 is june 15th
+        axr.text(r.index[288], 5, '0', fontsize=9, color='0.4', alpha=0.7)
+        axr.text(r.index[288], 10000, '10', fontsize=9, color='0.4', alpha=0.7)
+        axr.text(r.index[288], 20000, '20', fontsize=9, color='0.4', alpha=0.7)
+        axr.text(r.index[288], 30000, r'30$\times$10$^3$ m$^3$s$^{-1}$', fontsize=9, color='0.4', alpha=0.7)
+        axr.text(r.index[166], 30000, 'Mississippi discharge', fontsize=9, color='0.4', alpha=0.7)
         # ticks
         axr.get_yaxis().set_visible(False)
         axr.get_xaxis().set_visible(False)
@@ -266,7 +290,8 @@ for year in years:
         Uwind = m.Uwind.sel(ocean_time=plotdate).data
         Vwind = m.Vwind.sel(ocean_time=plotdate).data
         Uwind, Vwind = rot2d(Uwind, Vwind, anglev)
-        Q = ax.quiver(lon_rho[wdy/2::wdy,wdx::wdx], lat_rho[wdy/2::wdy,wdx::wdx], Uwind[wdy/2::wdy,wdx::wdx], Vwind[wdy/2::wdy,wdx::wdx],
+        wdy2 = int(wdy/2)
+        Q = ax.quiver(lon_rho[wdy2::wdy,wdx::wdx], lat_rho[wdy2::wdy,wdx::wdx], Uwind[wdy2::wdy,wdx::wdx], Vwind[wdy2::wdy,wdx::wdx],
                 color='k', alpha=0.3, scale=300, pivot='middle', headlength=3, headaxislength=2.8, transform=ccrs.PlateCarree())
         qk = ax.quiverkey(Q, 0.15, 0.84, 10, r'10 m$\cdot$s$^{-1}$ wind', labelcolor='0.2', fontproperties={'size': '10'})
 
