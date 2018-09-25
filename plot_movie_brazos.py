@@ -220,11 +220,12 @@ for year in years:
         axr.autoscale(axis='x', tight=True)
         axr.set_ylim(-1000,45000)
         # labels
-        axr.text(r[str(year)+'-10-15'].index, 5, '0', fontsize=9, color='0.4', alpha=0.7)
-        axr.text(r[str(year)+'-10-15'].index, 10000, '10', fontsize=9, color='0.4', alpha=0.7)
-        axr.text(r[str(year)+'-10-15'].index, 20000, '20', fontsize=9, color='0.4', alpha=0.7)
-        axr.text(r[str(year)+'-10-15'].index, 30000, r'30$\times$10$^3$ m$^3$s$^{-1}$', fontsize=9, color='0.4', alpha=0.7)
-        axr.text(r[str(year)+'-6-15'].index, 30000, 'Mississippi discharge', fontsize=9, color='0.4', alpha=0.7)
+        # index 288 is october 15th; index 166 is june 15th
+        axr.text(r.index[288], 5, '0', fontsize=9, color='0.4', alpha=0.7)
+        axr.text(r.index[288], 10000, '10', fontsize=9, color='0.4', alpha=0.7)
+        axr.text(r.index[288], 20000, '20', fontsize=9, color='0.4', alpha=0.7)
+        axr.text(r.index[288], 30000, r'30$\times$10$^3$ m$^3$s$^{-1}$', fontsize=9, color='0.4', alpha=0.7)
+        axr.text(r.index[166], 30000, 'Mississippi discharge', fontsize=9, color='0.4', alpha=0.7)
         # ticks
         axr.get_yaxis().set_visible(False)
         axr.get_xaxis().set_visible(False)
