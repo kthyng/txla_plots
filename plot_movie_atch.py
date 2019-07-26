@@ -58,8 +58,15 @@ wdx = 25; wdy = 40 # wind, in indices
 hlevs = [10, 20, 50, 100, 150, 200, 250, 300, 350, 400, 450]  # isobath contour depths
 
 # Grid info
-loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg'
-m = xr.open_dataset(loc)
+locs = ['http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg',
+        'http://copano.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg',
+        'http://terrebonne.tamu.edu:8080/thredds/dodsC/NcML/txla_hindcast_agg']
+for iloc, loc in enumerate(locs):
+    try:
+        m = xr.open_dataset(loc)
+        break  # if this works, exit loop; iloc notes location in locs
+    except:
+        continue
 
 # Rename for convenience
 lon_psi = m['lon_psi'][:].data
@@ -94,33 +101,50 @@ river = cfeature.NaturalEarthFeature('physical', 'rivers_lake_centerlines', '10m
 rivermore = cfeature.NaturalEarthFeature('physical', 'rivers_north_america', '10m')
 
 ## River forcing ##
-try:
-    Files = sorted(glob('/copano/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
-    ds = [xr.open_dataset(File) for File in Files]
-    # need to drop extra variable from 2016:
-    ds[-1] = ds[-1].drop('river_flag')
-except:
-    # in case I am running on rainier with expandrive
-    Files = sorted(glob('/Volumes/copano.tamu.edu/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
-    Files.pop(-1)  # have to remove 2016 because the file isn't working
-    ds = [xr.open_dataset(File) for File in Files]
-    # # need to drop extra variable from 2016:
-    # ds[-1] = ds[-1].drop('river_flag')
-rds = xr.auto_combine(ds)  # all output here
-# take 2/3 of total river inflow as mississippi river discharge
-r = (np.abs(rds['river_transport']).sum(axis=1)*2.0/3.0).to_pandas()
+# try:
+#     Files = sorted(glob('/copano/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
+#     ds = [xr.open_dataset(File) for File in Files]
+#     # need to drop extra variable from 2016:
+#     ds[-1] = ds[-1].drop('river_flag')
+# except:
+#     # in case I am running on rainier with expandrive
+#     Files = sorted(glob('/Volumes/copano.tamu.edu/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_????_AR_newT_SWpass_weekly.nc'))
+#     # Files.pop(-1)  # have to remove 2016 because the file isn't working
+#     ds = [xr.open_dataset(File) for File in Files]
+#     # # need to drop extra variable from 2016:
+#     # ds[-1] = ds[-1].drop('river_flag')
+# rds = xr.auto_combine(ds)  # all output here
+# # take 2/3 of total river inflow as mississippi river discharge
+# r = (np.abs(rds['river_transport']).sum(axis=1)*2.0/3.0).to_pandas()
 
 base = 'figures/' + varname + '/movies/'
-years = np.arange(1994, 2017)
+years = np.arange(1993, 2018)
 
 for year in years:
 
     # Time period to use
     plotdates = m['ocean_time'].sel(ocean_time=str(year))
-
     mticknames = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
     iticks = [datetime(year, month, 2, 0, 0) for month in np.arange(1,13)]
 
+    # river forcing - use file for this year
+    try:
+        File = '/copano/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_%s_AR_newT_SWpass_weekly.nc' % year
+        ds = xr.open_dataset(File)
+        # need to drop extra variable from 2016:
+        ds[-1] = ds[-1].drop('river_flag')
+    except:
+        # in case I am running on rainier with expandrive
+        File = '/Volumes/copano.tamu.edu/d1/shared/TXLA_ROMS/inputs/rivers/txla2_river_%s_AR_newT_SWpass_weekly.nc' % year
+        # Files.pop(-1)  # have to remove 2016 because the file isn't working
+        ds = xr.open_dataset(File)
+        # # need to drop extra variable from 2016:
+        # ds[-1] = ds[-1].drop('river_flag')
+    # for each year, remove any time steps outside the present year
+    # ds = [ds[i].sel(river_time=str(year)) for i, year in enumerate(yearsrivers)]
+    # rds = xr.auto_combine(ds)  # all output here
+    # take 2/3 of total river inflow as mississippi river discharge
+    r = (np.abs(ds['river_transport']).sum(axis=1)*2.0/3.0).to_pandas()
 
     # Loop through times that simulations were started
     for plotdate in plotdates:
@@ -156,7 +180,15 @@ for year in years:
 
         # Plot variable
         # Note: skip ghost cells in x and y so that can properly plot grid cell boxes with pcolormesh
-        var = m[varname].sel(ocean_time=plotdate).isel(s_rho=-1, eta_rho=slice(1,-1), xi_rho=slice(1,-1))
+        try:
+            var = m[varname].sel(ocean_time=plotdate).isel(s_rho=-1, eta_rho=slice(1,-1), xi_rho=slice(1,-1)).values
+        except:  # try next loc
+            if iloc == len(locs)-1:  # restart loop if at end
+                ilocnext = 0
+            else:
+                ilocnext = iloc+1
+            m = xr.open_dataset(locs[ilocnext])
+            var = m[varname].sel(ocean_time=plotdate).isel(s_rho=-1, eta_rho=slice(1,-1), xi_rho=slice(1,-1)).values
         mappable = ax.pcolormesh(lon_psi, lat_psi, var*factor, cmap=cmap,
                                  vmin=cmin, vmax=cmax,
                                  transform=ccrs.PlateCarree(),
@@ -187,11 +219,12 @@ for year in years:
         axr.autoscale(axis='x', tight=True)
         axr.set_ylim(-1000,45000)
         # labels
-        axr.text(r[str(year)+'-10-15'].index, 5, '0', fontsize=9, color='0.4', alpha=0.7)
-        axr.text(r[str(year)+'-10-15'].index, 10000, '10', fontsize=9, color='0.4', alpha=0.7)
-        axr.text(r[str(year)+'-10-15'].index, 20000, '20', fontsize=9, color='0.4', alpha=0.7)
-        axr.text(r[str(year)+'-10-15'].index, 30000, r'30$\times$10$^3$ m$^3$s$^{-1}$', fontsize=9, color='0.4', alpha=0.7)
-        axr.text(r[str(year)+'-6-15'].index, 30000, 'Mississippi discharge', fontsize=9, color='0.4', alpha=0.7)
+        # index 288 is october 15th; index 166 is june 15th
+        axr.text(r.index[288], 5, '0', fontsize=9, color='0.4', alpha=0.7)
+        axr.text(r.index[288], 10000, '10', fontsize=9, color='0.4', alpha=0.7)
+        axr.text(r.index[288], 20000, '20', fontsize=9, color='0.4', alpha=0.7)
+        axr.text(r.index[288], 30000, r'30$\times$10$^3$ m$^3$s$^{-1}$', fontsize=9, color='0.4', alpha=0.7)
+        axr.text(r.index[166], 30000, 'Mississippi discharge', fontsize=9, color='0.4', alpha=0.7)
         # ticks
         axr.get_yaxis().set_visible(False)
         axr.get_xaxis().set_visible(False)
